@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCloudSave, putCloudSave } from '@/lib/server/onlineStore';
 import { accountFromRequest } from '@/lib/server/session';
+import { StorageUnavailableError } from '@/lib/server/kv';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,14 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Thieu truong state.' }, { status: 400 });
   }
 
-  const save = await putCloudSave(session.pilot.id, json.state);
-  return NextResponse.json({ updatedAt: save.updatedAt, version: save.version });
+  try {
+    const save = await putCloudSave(session.pilot.id, json.state);
+    return NextResponse.json({ updatedAt: save.updatedAt, version: save.version });
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
+    console.error('[save]', error);
+    return NextResponse.json({ error: 'Luu tien do that bai do loi may chu.' }, { status: 500 });
+  }
 }

@@ -37,13 +37,41 @@ const enqueue = <T>(job: () => Promise<T>): Promise<T> => {
   return run;
 };
 
+type KvResponse = { result?: unknown; error?: string };
+
+/**
+ * Không ghi được storage. Xảy ra khi deploy lên môi trường chỉ-đọc (Vercel serverless)
+ * mà chưa cấu hình Vercel KV — lúc đó fallback ghi file sẽ bị EROFS.
+ */
+export class StorageUnavailableError extends Error {
+  constructor() {
+    super('Máy chủ chưa cấu hình nơi lưu trữ. Hãy thêm Vercel KV (biến KV_REST_API_URL và KV_REST_API_TOKEN) hoặc deploy lên hosting cho phép ghi file.');
+    this.name = 'StorageUnavailableError';
+  }
+}
+
+/** Nhớ kết quả kiểm tra ghi-file để khỏi lặp lại mỗi request. */
+let fileWritable: boolean | null = null;
+
+async function fileBackendWritable(): Promise<boolean> {
+  if (storageMode === 'kv') return true;
+  if (fileWritable !== null) return fileWritable;
+  try {
+    await fs.mkdir(FILE_DIR, { recursive: true });
+    await fs.access(FILE_DIR, fs.constants.W_OK);
+    fileWritable = true;
+  } catch {
+    fileWritable = false;
+  }
+  return fileWritable;
+}
+
 /** Ghi thang xuong file, khong xep hang. CHI goi khi dang o trong hang doi. */
 async function writeFileNow(key: string, value: string): Promise<void> {
+  if (!(await fileBackendWritable())) throw new StorageUnavailableError();
   await fs.mkdir(FILE_DIR, { recursive: true });
   await fs.writeFile(fileOf(key), value, 'utf8');
 }
-
-type KvResponse = { result?: unknown; error?: string };
 
 async function restCommand<T>(...args: Array<string | number>): Promise<T | null> {
   if (storageMode !== 'kv') return null;

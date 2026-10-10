@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { changePassword, loginWithPassword, registerAccount } from '@/lib/server/onlineStore';
 import { accountFromRequest, clearCookieHeader, logoutRequest, sessionCookieHeader } from '@/lib/server/session';
+import { StorageUnavailableError } from '@/lib/server/kv';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,15 @@ export const dynamic = 'force-dynamic';
 
 type Action = 'register' | 'login' | 'logout' | 'change-password';
 const ACTIONS: Action[] = ['register', 'login', 'logout', 'change-password'];
+
+/** Dịch lỗi storage (chưa cấu hình KV trên hosting chỉ-đọc) ra thông báo người dùng đọc được. */
+function failure(error: unknown, fallback: string) {
+  if (error instanceof StorageUnavailableError) {
+    return NextResponse.json({ error: error.message }, { status: 503 });
+  }
+  console.error('[auth]', error);
+  return NextResponse.json({ error: fallback }, { status: 500 });
+}
 
 export async function GET(request: Request) {
   const session = await accountFromRequest(request);
@@ -47,31 +57,43 @@ export async function POST(request: Request) {
   if (action === 'change-password') {
     const session = await accountFromRequest(request);
     if (!session) return NextResponse.json({ error: 'Can dang nhap.' }, { status: 401 });
-    const result = await changePassword(session.pilot, String(json.current || ''), String(json.next || ''));
-    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
-    return NextResponse.json({ ok: true });
+    try {
+      const result = await changePassword(session.pilot, String(json.current || ''), String(json.next || ''));
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+      return NextResponse.json({ ok: true });
+    } catch (error) {
+      return failure(error, 'Doi mat khau that bai do loi may chu.');
+    }
   }
 
   if (action === 'register') {
-    const result = await registerAccount({
-      username: String(json.username || ''),
-      password: String(json.password || ''),
-      name: String(json.name || ''),
-    });
-    if (!result.ok) return NextResponse.json({ error: result.error, field: result.field }, { status: result.field ? 400 : 409 });
-    return NextResponse.json(
-      { account: { id: result.pilot.id, code: result.pilot.code, name: result.pilot.name, username: result.pilot.username, createdAt: result.pilot.createdAt } },
-      { status: 201, headers: { 'Set-Cookie': sessionCookieHeader(request, result.token) } },
-    );
+    try {
+      const result = await registerAccount({
+        username: String(json.username || ''),
+        password: String(json.password || ''),
+        name: String(json.name || ''),
+      });
+      if (!result.ok) return NextResponse.json({ error: result.error, field: result.field }, { status: result.field ? 400 : 409 });
+      return NextResponse.json(
+        { account: { id: result.pilot.id, code: result.pilot.code, name: result.pilot.name, username: result.pilot.username, createdAt: result.pilot.createdAt } },
+        { status: 201, headers: { 'Set-Cookie': sessionCookieHeader(request, result.token) } },
+      );
+    } catch (error) {
+      return failure(error, 'Dang ky that bai do loi may chu.');
+    }
   }
 
-  const result = await loginWithPassword({
-    username: String(json.username || ''),
-    password: String(json.password || ''),
-  });
-  if (!result.ok) return NextResponse.json({ error: result.error, field: result.field }, { status: 401 });
-  return NextResponse.json(
-    { account: { id: result.pilot.id, code: result.pilot.code, name: result.pilot.name, username: result.pilot.username, createdAt: result.pilot.createdAt } },
-    { headers: { 'Set-Cookie': sessionCookieHeader(request, result.token) } },
-  );
+  try {
+    const result = await loginWithPassword({
+      username: String(json.username || ''),
+      password: String(json.password || ''),
+    });
+    if (!result.ok) return NextResponse.json({ error: result.error, field: result.field }, { status: 401 });
+    return NextResponse.json(
+      { account: { id: result.pilot.id, code: result.pilot.code, name: result.pilot.name, username: result.pilot.username, createdAt: result.pilot.createdAt } },
+      { headers: { 'Set-Cookie': sessionCookieHeader(request, result.token) } },
+    );
+  } catch (error) {
+    return failure(error, 'Dang nhap that bai do loi may chu.');
+  }
 }
