@@ -512,7 +512,7 @@ function DashboardContent() {
         </span>
       </div>
       {bundleNotice&&<div className="celebration"><div className="confetti-burst">✦ ✈ ✨ 🎉 ✦</div><b>Gói khởi nghiệp đã sẵn sàng!</b></div>}
-      {coach>=0&&<div className="coach-layer"><div className="coach-dim"/><div className="coach-spotlight" style={coachRect?{left:coachRect.left-7,top:coachRect.top-7,width:coachRect.width+14,height:coachRect.height+14}:undefined}/><div className="coach-inline"><div className="coach-inline-top"><span>HƯỚNG DẪN · {coach+1}/6</span><button onClick={()=>{setCoach(-1);game.update(x=>({...x,tutorialDone:true}))}}>Bỏ qua</button></div><p>{coachSteps[coach]?.[1]}</p><button className="btn" onClick={()=>{if(coach===5){setCoach(-1);game.update(x=>({...x,tutorialDone:true}))}else setCoach(coach+1)}}>{coach===5?'Bắt đầu chơi':'Tiếp tục'} <ArrowRight size={15}/></button></div></div>}
+      {coach>=0&&!game.pendingMilestone&&!game.pendingLevelUp&&!game.pendingIpo&&!game.pendingOfflineSummary&&<div className="coach-layer"><div className="coach-dim"/><div className="coach-spotlight" style={coachRect?{left:coachRect.left-7,top:coachRect.top-7,width:coachRect.width+14,height:coachRect.height+14}:undefined}/><div className="coach-inline"><div className="coach-inline-top"><span>HƯỚNG DẪN · {coach+1}/6</span><button onClick={()=>{setCoach(-1);game.update(x=>({...x,tutorialDone:true}))}}>Bỏ qua</button></div><p>{coachSteps[coach]?.[1]}</p><button className="btn" onClick={()=>{if(coach===5){setCoach(-1);game.update(x=>({...x,tutorialDone:true}))}else setCoach(coach+1)}}>{coach===5?'Bắt đầu chơi':'Tiếp tục'} <ArrowRight size={15}/></button></div></div>}
     </>
   );
 }

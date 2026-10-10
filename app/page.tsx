@@ -30,6 +30,7 @@ export default function Home() {
     <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       {/* Navbar */}
       <nav
+        className="landing-nav"
         style={{
           height: 76,
           display: 'flex',
@@ -46,17 +47,18 @@ export default function Home() {
             VIETNAM AIRLINE TYCOON
           </b>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="landing-nav-actions">
           <Link className="btn ghost" href="/login">
             {mounted && hydrate && airline ? 'Đổi tài khoản' : 'Đăng nhập'}
           </Link>
           {mounted && hydrate && airline ? (
             <Link className="btn" href="/dashboard">
-              Tiếp tục chơi ({airline.name}) <ArrowRight size={16} />
+              <span className="nav-label">Tiếp tục chơi</span>
+              <span className="nav-name"> ({airline.name})</span> <ArrowRight size={16} />
             </Link>
           ) : (
             <Link className="btn" href="/onboarding?quick=1">
-              Chơi nhanh miễn phí <ArrowRight size={16} />
+              <span className="nav-label">Chơi nhanh miễn phí</span> <ArrowRight size={16} />
             </Link>
           )}
         </div>
