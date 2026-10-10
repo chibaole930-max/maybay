@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { addAirport, listAirports } from '@/lib/server/airportStore';
 import { draftAirport } from '@/lib/geo-naming';
+import { accountFromRequest } from '@/lib/server/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,8 @@ export async function POST(request: Request) {
   draft.landingFee = Math.round(clamp(body.landingFee, 10, 2000, draft.landingFee));
   draft.demand = Math.round(clamp(body.demand, 1, 10, draft.demand));
 
-  const createdBy = clean(body.createdBy, 'Khách vô danh', 32);
+  const session = await accountFromRequest(request);
+  const createdBy = clean(session?.account.name ?? body.createdBy, 'Khách vô danh', 32);
   const result = await addAirport(draft, createdBy);
 
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 409 });

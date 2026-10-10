@@ -1,14 +1,13 @@
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
+import { kvGetJson, kvMutateJson } from './kv';
 import type { AirportDraft } from '@/lib/geo-naming';
 
 /**
- * Kho sân bay dùng chung cho mọi người chơi.
- * Ghi xuống một file JSON trong thư mục dự án; nếu deploy lên môi trường
- * chỉ-đọc (serverless/Vercel) thì cần thay bằng database hoặc KV.
+ * Kho san bay dung chung cho moi nguoi choi.
+ * Luu trong KV (Vercel KV hoac file `data/kv/`) nen chay duoc ca tren serverless.
  */
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DATA_FILE = path.join(DATA_DIR, 'airports.json');
+
+const AIRPORTS_KEY = 'vat:airports';
+const MAX_AIRPORTS = 200;
 
 export type SharedAirport = AirportDraft & {
   createdAt: number;
@@ -18,44 +17,45 @@ export type SharedAirport = AirportDraft & {
 
 type Payload = { airports: SharedAirport[] };
 
-const EMPTY: Payload = { airports: [] };
+const emptyPayload = (): Payload => ({ airports: [] });
 
-async function readAll(): Promise<SharedAirport[]> {
-  try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
-    const parsed = JSON.parse(raw) as Payload;
-    return Array.isArray(parsed.airports) ? parsed.airports : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeAll(airports: SharedAirport[]): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify({ airports }, null, 2), 'utf8');
-}
+const normalize = (raw: Payload | null): Payload => ({
+  airports: Array.isArray(raw?.airports) ? raw!.airports : [],
+});
 
 export async function listAirports(): Promise<SharedAirport[]> {
-  const all = await readAll();
-  return all.sort((a, b) => b.createdAt - a.createdAt);
+  const { airports } = await kvGetJson<Payload>(AIRPORTS_KEY, emptyPayload()).then(normalize);
+  return [...airports].sort((a, b) => b.createdAt - a.createdAt);
 }
 
 /**
- * Thêm sân bay mới. Trả về sân bay đã tạo, hoặc lý do bị từ chối.
- * Hai request gần nhau có thể đọc cùng một file rồi ghi đè nhau;
- * xử lý bằng cách ghi lại toàn bộ kho sau khi đọc ở chính request đó.
+ * Them san bay moi. Tra ve san bay da tao, hoac ly do bi tu choi.
+ * Viec doc-va-ghi nam trong `kvMutateJson` nen 2 request gan nhau khong ghi de nhau.
  */
 export async function addAirport(draft: AirportDraft, createdBy: string): Promise<{ ok: true; airport: SharedAirport } | { ok: false; error: string }> {
-  const all = await readAll();
-  if (all.some((item) => item.code === draft.code)) return { ok: false, error: `Mã sân bay ${draft.code} đã tồn tại.` };
-  if (all.length >= 200) return { ok: false, error: 'Kho sân bay chung đã đầy.' };
+  const outcome = await kvMutateJson<Payload, { ok: true; airport: SharedAirport } | { ok: false; error: string }>(AIRPORTS_KEY, emptyPayload(), (raw) => {
+    const payload = normalize(raw);
+    if (payload.airports.some((item) => item.code === draft.code)) {
+      return { next: payload, result: { ok: false as const, error: `Ma san bay ${draft.code} da ton tai.` } };
+    }
+    if (payload.airports.length >= MAX_AIRPORTS) {
+      return { next: payload, result: { ok: false as const, error: 'Kho san bay chung da day.' } };
+    }
+    const airport: SharedAirport = {
+      ...draft,
+      slots: draft.demand >= 8 ? 6 : 5,
+      createdAt: Date.now(),
+      createdBy: createdBy.slice(0, 32),
+    };
+    return { next: payload, result: { ok: true as const, airport } };
+  });
 
-  const airport: SharedAirport = {
-    ...draft,
-    slots: draft.demand >= 8 ? 6 : 5,
-    createdAt: Date.now(),
-    createdBy: createdBy.slice(0, 32),
-  };
-  await writeAll([airport, ...all]);
-  return { ok: true, airport };
+  if (!outcome.ok) return outcome;
+  // Ghi lai ca kho mot lan nua de san bay moi duoc dua vao — `mutate` o tren chi kiem tra.
+  await kvMutateJson<Payload, void>(AIRPORTS_KEY, emptyPayload(), (raw) => {
+    const payload = normalize(raw);
+    payload.airports.unshift(outcome.airport);
+    return { next: payload, result: undefined };
+  });
+  return outcome;
 }

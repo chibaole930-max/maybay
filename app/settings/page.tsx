@@ -19,6 +19,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { GameShell, PageHeading } from '@/components/game-shell';
+import { AccountSection } from '@/components/account-section';
 import { useGameStore } from '@/store/useGameStore';
 
 const colors = [
@@ -347,6 +348,12 @@ function SettingsContent() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* TÀI KHOẢN */}
+        <div className="card">
+          <h2 className="section-title">Tài khoản</h2>
+          <AccountSection />
         </div>
 
         {/* SAVE IMPORT / EXPORT */}

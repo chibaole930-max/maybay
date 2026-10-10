@@ -47,6 +47,9 @@ export default function Home() {
           </b>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          <Link className="btn ghost" href="/login">
+            {mounted && hydrate && airline ? 'Đổi tài khoản' : 'Đăng nhập'}
+          </Link>
           {mounted && hydrate && airline ? (
             <Link className="btn" href="/dashboard">
               Tiếp tục chơi ({airline.name}) <ArrowRight size={16} />

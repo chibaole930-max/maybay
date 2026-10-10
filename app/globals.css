@@ -495,3 +495,25 @@ body.dark .progress {
     font-size: 22px;
   }
 }
+
+/* === Tai khoan & dong bo online === */
+.account-chip .badge,
+.badge.inline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.account-chip {
+  max-width: 190px;
+}
+.account-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* An phan chu cua nut header khi man hình hep (mobile) */
+@media (max-width: 1080px) {
+  .hide-narrow {
+    display: none;
+  }
+}

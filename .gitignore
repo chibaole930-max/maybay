@@ -2,3 +2,7 @@
 node_modules/
 .env.local
 *.tsbuildinfo
+
+# Kho KV khi chạy local (không dùng Vercel KV). Trên Vercel, KV_REST_API_URL
+# sẽ khiến dữ liệu nằm trên KV chứ không ghi vào đây.
+data/kv/

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { buyListing, listMarket, postListing, verifyToken } from '@/lib/server/onlineStore';
+import { buyListing, listMarket, postListing } from '@/lib/server/onlineStore';
+import { accountFromRequest } from '@/lib/server/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,7 @@ const Sell = z.object({ model: z.string().min(2).max(40), wear: z.number().min(0
 
 export async function GET() {
   const listings = await listMarket();
-  // Gộp 2 tin mẫu để chợ không trống khi server mới.
+  // Gop 2 tin mau de cho khong trong khi server moi.
   const seed = [
     { id: 'seed-1', model: 'Airbus A320neo', wear: 22, price: 9800000, seller: 'VietSky', sellerId: 'seed', createdAt: Date.now() },
     { id: 'seed-2', model: 'ATR 72-600', wear: 11, price: 2650000, seller: 'Saigon Air', sellerId: 'seed', createdAt: Date.now() },
@@ -17,21 +18,24 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  const pilot = await verifyToken(token);
-  if (!pilot) return NextResponse.json({ error: 'Chưa đăng nhập online.' }, { status: 401 });
+  const session = await accountFromRequest(request);
+  if (!session) return NextResponse.json({ error: 'Can dang nhap de giao dich.' }, { status: 401 });
+  const { pilot } = session;
+
   let json: unknown;
-  try { json = await request.json(); } catch { return NextResponse.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 }); }
-  // Mua: { buyId } — Bán: { model, wear, price }
+  try { json = await request.json(); } catch { return NextResponse.json({ error: 'Du lieu khong hop le.' }, { status: 400 }); }
+
+  // Mua: { buyId } — Ban: { model, wear, price }
   if (typeof (json as Record<string, unknown>).buyId === 'string') {
     const id = String((json as Record<string, unknown>).buyId);
-    if (id.startsWith('seed-')) return NextResponse.json({ error: 'Tin mẫu chỉ để xem — hãy mua tin của người chơi thật.' }, { status: 400 });
+    if (id.startsWith('seed-')) return NextResponse.json({ error: 'Tin mau chi de xem — hay mua tin cua nguoi choi that.' }, { status: 400 });
     const result = await buyListing(pilot, id);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 409 });
     return NextResponse.json({ ok: true, listing: result.listing });
   }
+
   const parsed = Sell.safeParse(json);
-  if (!parsed.success) return NextResponse.json({ error: 'Dữ liệu rao bán không hợp lệ.' }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: 'Tin rao ban khong hop le.' }, { status: 400 });
   const listing = await postListing(pilot, parsed.data.model, parsed.data.wear, parsed.data.price);
   return NextResponse.json({ listing }, { status: 201 });
 }
