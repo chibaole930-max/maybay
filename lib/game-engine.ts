@@ -87,7 +87,7 @@ export const initialState = (): GameState => ({
   pendingLevelUp: undefined,
   pendingOfflineSummary: null,
   currentSituation: null,
-  situationNextAt: Date.now() + 45 * 60 * 1000 + Math.random() * 75 * 60 * 1000,
+  situationNextAt: Date.now() + situationDelayMs(false),
   activeConsequences: [],
   hardcore: false,
   redPriceSince: {},
@@ -110,6 +110,27 @@ export const initialState = (): GameState => ({
 
 /** Tốc độ mô phỏng: một giây thực tương đương một phút trong game. */
 export const TIME_SCALE = 60;
+
+/**
+ * Tình huống vận hành đếm theo đồng hồ THỰC của người chơi, không phải thời gian game.
+ * Lý do: `gameTimeMs` chạy nhanh gấp `TIME_SCALE` lần (và thêm cả hệ số tốc độ 1×/2×/4×),
+ * nên nếu lấy mốc thời gian game thì 30 "phút game" chỉ tương đương ~30 giây thực ở tốc 1×
+ * và ~7 giây ở tốc 4× — popup hiện liên tục. Đặt theo `Date.now()` để tần xuất ổn định.
+ */
+const SITUATION_MIN_MINUTES = 26; // chế độ thường
+const SITUATION_RANGE_MINUTES = 9; // +0–9 phút → trung bình ~30 phút
+const SITUATION_HARDCORE_MIN = 18;
+const SITUATION_HARDCORE_RANGE = 8;
+
+/** Khoảng cách đến tình huống tiếp theo, tính bằng mili-giây thực. */
+const situationDelayMs = (hardcore: boolean): number =>
+  ((hardcore ? SITUATION_HARDCORE_MIN : SITUATION_MIN_MINUTES) + Math.random() * (hardcore ? SITUATION_HARDCORE_RANGE : SITUATION_RANGE_MINUTES)) * 60000;
+
+/** Mốc thời gian hợp lệ của đồng hồ thực — dùng để nhận ra bản lưu cũ đang để mốc giờ game. */
+const MIN_WALL_CLOCK = Date.UTC(2020, 0, 1);
+
+const isWallClock = (value: number | undefined): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value > MIN_WALL_CLOCK;
 
 const createTransaction = (
   type: Transaction['type'],
@@ -223,7 +244,7 @@ export function createAirline(
     researchProfitRemainder: 0,
     lastCostTransactionAt: Date.now(),
     pendingOperatingCost: 0,
-    situationNextAt: 45 * 60000 + Math.random() * 75 * 60000,
+    situationNextAt: Date.now() + situationDelayMs(false),
     competitorPriceAt: 6 * 3600000,
     missions: [...starterMissions.map((m) => ({ ...m })), ...dailyMissions.map((m) => ({ ...m }))],
     lastDailyReset: dayId(),
@@ -1369,13 +1390,12 @@ export function tickGame(state: GameState, now = Date.now()): GameState {
   researchPool -= researchGained;
 
   let currentSituation = state.currentSituation ?? null;
-  let situationNextAt = state.situationNextAt ?? previousGameTime + 30 * 60000;
-  if (!currentSituation && situationNextAt <= gameNow) {
+  // `situationNextAt` là mốc đồng hồ thực nên so với `now`, KHÔNG phải `gameNow`.
+  // Bản lưu cũ đang lưu mốc giờ game (số nhỏ) → coi như hết hạn, đặt lại theo quy luật mới.
+  let situationNextAt = isWallClock(state.situationNextAt) ? state.situationNextAt : now + situationDelayMs(hardcore);
+  if (!currentSituation && situationNextAt <= now) {
     currentSituation = pickFunnySituation();
-    // Một giây thực = một phút game. 45-120 phút game = 45-120 giây thật.
-    const intervalMin = hardcore ? 35 : 45;
-    const intervalRange = hardcore ? 55 : 75;
-    situationNextAt = gameNow + (intervalMin + Math.random() * intervalRange) * 60000;
+    situationNextAt = now + situationDelayMs(hardcore);
     addActivity({ id: `situation-${now}`, at: now, kind: 'situation', text: `Tình huống vận hành: ${currentSituation.title}` });
   }
   let eventTransactions: Transaction[] = [];
