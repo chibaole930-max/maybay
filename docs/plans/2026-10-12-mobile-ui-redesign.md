@@ -176,7 +176,7 @@ Ordered; each task is one commit (`type(scope): description`).
     screenshots sent to Telegram, committed + pushed per standing instruction;
     eye-review feedback will be applied as follow-up.
 
-- [ ] **Task 5: Airports + map chrome**
+- [x] **Task 5: Airports + map chrome**
   - Files: `app/airports/page.tsx`, `components/map/AirlineMap.tsx`,
     `components/map/AirportPickerMap.tsx`, `app/v5.css`, legacy blocks
   - Depends on: Task 4
@@ -184,6 +184,9 @@ Ordered; each task is one commit (`type(scope): description`).
     geo data untouched.
   - Verify: `npm run build`; screenshots incl. map fullscreen mode at 390×844 → user
     eye-review; AC1, AC4.
+  - Status 2026-10-12: implemented, verified programmatically (see evidence),
+    screenshots sent to Telegram, committed + pushed per standing instruction;
+    eye-review feedback will be applied as follow-up.
 
 - [ ] **Task 6: Finance + Missions + Leaderboard**
   - Files: `app/finance/page.tsx`, `app/missions/page.tsx`, `app/leaderboard/page.tsx`,
@@ -315,6 +318,34 @@ Ordered; each task is one commit (`type(scope): description`).
   kinds, overflow 0. Standard sweep /fleet+/routes @390/1280 × light/dark:
   scrollW overflow 0 (only Leaflet tile/marker internals bleed inside their
   clipped container — Task 5 area). Screenshots: `/tmp/opencode/review/t4/`.
+- Post-push sequencing fix (aded544): the v5 §12 block was appended after the
+  T4 commit cut, so production briefly lacked it (review screenshots were
+  unaffected — the review copy had it). Follow-up rule: always `git diff --stat`
+  the CSS file against the commit before pushing.
+
+### Task 5 (2026-10-12, committed + pushed per standing instruction)
+
+- `npx tsc --noEmit` → clean. `npm run build` → success (isolated full-tree copy).
+- Map TSX untouched (pure chrome task — no logic/geo/config changes).
+- v5 §13: `.hub-banner`, `.airport-code` (mono), `.airport-locked`, full
+  AirlineMap chrome (heading/actions/regions/layout/heights, plane + airport
+  markers, route flow kept on `route-dash`, flight panel, teasers), picker
+  chrome (grid, positioned map wrap — fixes the floating hint — form/fields at
+  44px, pins, popup margin), Leaflet `font:inherit` + dark popups, `.spin`
+  utility (the loader icon never rotated — undefined class until now).
+- Airports tsx: filter tabs → `.chip`, hub/community tiles, spec rows → `.kv`,
+  demand/slot colors via tokens, actions → `.compact`, second-base modal →
+  `.modal-backdrop`.
+- Legacy deletion: 3 rules v3, 76 rules v4 (8.9→1.7KB) + stragglers
+  (`.situation-backdrop` z-index kept, activity kind colors, dead `flame` /
+  `golden-glow` keyframes, shadowed v4 `:root`, `.level-pill` group after giving
+  v5 `.badge` tabular numerals). Residual owned-base grep: 0.
+- Captures @390px: airports list (level 3, locked regions visible) light/dark,
+  picker + placed draft form, hub modal (level 11), routes map + expanded mode
+  light/dark — 10/10 correct, overflow 0. Sweep /airports @390/1280 ×
+  light/dark: 0. Note: seed airline is level ~1 so locked pages need explicit
+  level injection — `shot.mjs` now unlocks to 11 for all future sweeps; locked
+  states stay covered by teaser captures. Screenshots: `/tmp/opencode/review/t5/`.
 
 ## Handoff
 

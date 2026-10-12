@@ -1,9 +1,9 @@
-.situation-backdrop{z-index:120}.community-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.community-card{padding:20px}.community-card h2{margin:8px 0;font-size:20px}.community-card p{font-size:12px;line-height:1.65;color:var(--muted)}.community-card>small{display:block;color:var(--muted);margin-top:8px;font-size:10px}.coming-soon{display:inline-block;color:#0a58ca;background:#0a58ca12;padding:7px 9px;border-radius:8px;font-size:10px}.chat-preview{margin-top:12px;max-height:150px;overflow:auto}.market-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}.market-row small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.community-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.community-card{padding:20px}.community-card h2{margin:8px 0;font-size:20px}.community-card p{font-size:12px;line-height:1.65;color:var(--muted)}.community-card>small{display:block;color:var(--muted);margin-top:8px;font-size:10px}.coming-soon{display:inline-block;color:#0a58ca;background:#0a58ca12;padding:7px 9px;border-radius:8px;font-size:10px}.chat-preview{margin-top:12px;max-height:150px;overflow:auto}.market-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}.market-row small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
 @media(max-width:700px){.community-grid{grid-template-columns:1fr}}
- .airport-locked{opacity:.7}.airport-locked:after{content:'Khu vực sẽ mở khi bạn lên cấp';display:block;color:#64748b;font-size:10px;margin-top:8px}
+ 
 
 
 .hardcore-frame{border:2px solid #ef4444!important;box-shadow:0 0 0 4px #ef444422,0 12px 30px #dc262622!important}
 
-@media(min-width:761px){.map-expand{display:none!important}}
+
 .season-ranks{margin-top:12px}.season-ranks>div{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:11px}.season-ranks span{color:var(--muted);font-variant-numeric:tabular-nums}

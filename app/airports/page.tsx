@@ -135,7 +135,7 @@ function AirportsContent() {
       />
 
       {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
           { id: 'all', label: `Tất cả ${airports.length} sân bay` },
           { id: 'vn', label: `Nội địa Việt Nam (${airports.filter(a=>a.country==='Việt Nam').length})` },
@@ -144,8 +144,7 @@ function AirportsContent() {
           <button
             key={f.id}
             onClick={() => setFilter(f.id as any)}
-            className={`btn ${filter === f.id ? '' : 'ghost'}`}
-            style={{ padding: '8px 16px', minHeight: 38, fontSize: 13 }}
+            className={`chip ${filter === f.id ? 'active' : ''}`}
           >
             {f.label}
           </button>
@@ -153,33 +152,9 @@ function AirportsContent() {
       </div>
 
       {/* Second Base Hub Banner */}
-      <div
-        className="card"
-        style={{
-          background: 'linear-gradient(135deg, #0a58ca12, #ffb80012)',
-          borderColor: 'rgba(10, 88, 202, 0.25)',
-          padding: '20px 24px',
-          marginBottom: 24,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
+      <div className="card hub-banner">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              background: '#0a58ca',
-              color: 'white',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 24,
-            }}
-          >
+          <div className="hub-ic">
             🏢
           </div>
           <div>
@@ -198,11 +173,11 @@ function AirportsContent() {
 
         <div>
           {secondBaseAirport ? (
-            <span className="badge" style={{ padding: '6px 14px', fontSize: 12 }}>
+            <span className="badge">
               <CheckCircle2 size={14} /> Hoạt động tối ưu
             </span>
           ) : airlineLevel >= 10 ? (
-            <span className="badge" style={{ background: '#12a67822', color: '#12a678' }}>
+            <span className="badge">
               ✨ Đủ điều kiện thành lập căn cứ
             </span>
           ) : (
@@ -227,17 +202,7 @@ function AirportsContent() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 12,
-              background: '#0a58ca18',
-              color: '#0a58ca',
-              display: 'grid',
-              placeItems: 'center',
-            }}
-          >
+          <div className="tile-ic">
             <Globe2 size={20} />
           </div>
           <div>
@@ -289,19 +254,19 @@ function AirportsContent() {
           const isUnlocked = airlineLevel >= unlockLevel;
 
           return (
-            <div className={`card ${!isUnlocked?'airport-locked':''}`} key={airport.code} style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className={`card plane-card ${!isUnlocked?'airport-locked':''}`} key={airport.code}>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <b style={{ fontSize: 20 }}>{airport.code}</b>
+                    <b className="airport-code">{airport.code}</b>
                     {isBase && (
-                      <span className="badge" style={{ background: '#ffb80022', color: '#b45309' }}>
+                      <span className="badge warn">
                         ⭐ Hub chính
                       </span>
                     )}
                     {isSecondBase && (
-                      <span className="badge" style={{ background: '#12a67822', color: '#12a678' }}>
+                      <span className="badge">
                         Hub phụ
                       </span>
                     )}
@@ -311,17 +276,7 @@ function AirportsContent() {
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 12,
-                    display: 'grid',
-                    placeItems: 'center',
-                    background: 'var(--bg)',
-                    color: '#0a58ca',
-                  }}
-                >
+                <div className="tile-ic" style={{ width: 38, height: 38 }}>
                   <Building2 size={20} />
                 </div>
               </div>
@@ -334,46 +289,35 @@ function AirportsContent() {
               <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
                   <span className="muted">Nhu cầu hành khách</span>
-                  <b>{airport.demand} / 10</b>
+                  <b className="tabular-nums">{airport.demand} / 10</b>
                 </div>
                 <div className="progress">
                   <i
                     style={{
                       width: `${airport.demand * 10}%`,
-                      background: airport.demand >= 8 ? '#12a678' : '#0a58ca',
+                      background: airport.demand >= 8 ? 'var(--success)' : 'var(--blue)',
                     }}
                   />
                 </div>
               </div>
 
               {/* Specs */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                  fontSize: 12,
-                  padding: '10px 0',
-                  borderTop: '1px solid var(--line)',
-                  borderBottom: '1px solid var(--line)',
-                  margin: '6px 0 14px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span className="muted">Phí hạ cánh niêm yết</span>
+              <div style={{ fontSize: 12, padding: '4px 0 2px', margin: '6px 0 14px' }}>
+                <div className="kv">
+                  <span>Phí hạ cánh niêm yết</span>
                   <b>
                     {formatCurrency(airport.landingFee, currency)}
-                    {(isBase || isSecondBase) && <span style={{ color: '#12a678' }}> (-20%)</span>}
+                    {(isBase || isSecondBase) && <span className="positive"> (-20%)</span>}
                   </b>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span className="muted">Tình trạng Slot cất/hạ cánh</span>
-                  <b style={{ color: isSlotsFull ? '#e84b3c' : 'inherit' }}>
+                <div className="kv">
+                  <span>Tình trạng Slot cất/hạ cánh</span>
+                  <b style={{ color: isSlotsFull ? 'var(--danger)' : 'inherit' }}>
                     {airport.slotsUsed} / {airport.slots} ({slotsRemaining} slot trống)
                   </b>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span className="muted">Đường bay đang nối</span>
+                <div className="kv">
+                  <span>Đường bay đang nối</span>
                   <b>{activeRoutesCount} tuyến</b>
                 </div>
               </div>
@@ -381,8 +325,8 @@ function AirportsContent() {
               {/* Actions Footer */}
               <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
                 <button
-                  className="btn secondary"
-                  style={{ flex: 1, padding: '8px 10px', fontSize: 12 }}
+                  className="btn secondary compact"
+                  style={{ flex: 1 }}
                   disabled={!canBuySlot || !isUnlocked}
                   onClick={() => buySlot(airport.code)}
                 >
@@ -391,8 +335,7 @@ function AirportsContent() {
 
                 {!isBase && !isSecondBase && !secondBaseAirport && airlineLevel >= 10 && (
                   <button
-                    className="btn ghost"
-                    style={{ padding: '8px 10px', fontSize: 12 }}
+                    className="btn ghost compact"
                     onClick={() => setSelectedForBase(airport)}
                   >
                     Chọn làm Hub phụ
@@ -407,15 +350,7 @@ function AirportsContent() {
       {/* CONFIRM SECOND BASE MODAL */}
       {selectedForBase && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => setSelectedForBase(null)}
         >
           <div
