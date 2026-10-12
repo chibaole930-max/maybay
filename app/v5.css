@@ -1,0 +1,484 @@
+/* =============================================================================
+   v5 — Mobile-first design layer
+   Direction "Gốc có dấu ấn": keep the original identity (aviation, navy/blue/
+   amber, Be Vietnam Pro, light + dark) and rebuild the craft — consistent
+   radius/elevation, clear type hierarchy, mono tabular numerals for money,
+   hairline and registration detailing, restrained motion.
+
+   Loaded LAST in app/layout.tsx so it owns the cascade. Legacy v2–v4 rules are
+   retired page by page; see docs/plans/2026-10-12-mobile-ui-redesign.md
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 1. Tokens */
+:root {
+  --font-body: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --bg: #f4f7fc;
+  --surface: #ffffff;
+  --surface-subtle: #f8fafc;
+  --surface-sunken: #eef3fa;
+  --text: #13243a;
+  --muted: #6b7d94;
+  --line: #e6ecf5;
+  --line-strong: #d6e0ee;
+
+  --navy: #0b1f3a;
+  --blue: #0a58ca;
+  --blue-2: #2f7ae5;
+  --blue-light: #eaf2ff;
+  --accent: #ffb800;
+  --accent-soft: #fff5e0;
+  --accent-ink: #8a5a00;
+  --success: #12a678;
+  --success-soft: #e7f8f2;
+  --success-ink: #0e8f66;
+  --danger: #e84b3c;
+  --danger-soft: #fdecea;
+
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r: 13px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+
+  --sh-1: 0 1px 2px rgba(11, 31, 58, 0.05);
+  --sh-2: 0 1px 2px rgba(11, 31, 58, 0.05), 0 12px 28px -18px rgba(11, 31, 58, 0.3);
+  --sh-3: 0 18px 44px -22px rgba(11, 31, 58, 0.42);
+
+  --fs-micro: 10px;
+  --fs-xs: 11.5px;
+  --fs-sm: 13px;
+  --fs-base: 15px;
+  --fs-lg: 19px;
+  --fs-xl: 27px;
+  --tr-tight: -0.01em;
+  --tr-display: -0.025em;
+  --tr-num: -0.03em;
+  --ls-label: 0.15em;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+body.dark {
+  --bg: #081525;
+  --surface: #10233a;
+  --surface-subtle: #162c47;
+  --surface-sunken: #0c1c30;
+  --text: #e8eef7;
+  --muted: #94a3b8;
+  --line: #1e3653;
+  --line-strong: #2a4062;
+
+  --navy: #06111f;
+  --blue: #2575fc;
+  --blue-2: #4c93ff;
+  --blue-light: #152b47;
+  --accent: #ffb800;
+  --accent-soft: #35290d;
+  --accent-ink: #ffcf5c;
+  --success: #10b981;
+  --success-soft: #0f2f28;
+  --success-ink: #4fd7ae;
+  --danger: #f87171;
+  --danger-soft: #35201f;
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --sh-2: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 30px -18px rgba(0, 0, 0, 0.7);
+  --sh-3: 0 20px 48px -22px rgba(0, 0, 0, 0.8);
+}
+
+/* ----------------------------------------------------------------- 2. Base */
+html,
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Financial and metric figures are mono + tabular so digits stop jittering. */
+.tabular-nums {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: var(--tr-num);
+}
+
+.positive {
+  color: var(--success);
+}
+
+.negative {
+  color: var(--danger);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------- 3. Type */
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: var(--tr-display);
+  line-height: 1.15;
+  margin: 0;
+}
+
+.sub {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: var(--tr-tight);
+  margin: 0 0 13px;
+  color: var(--text);
+}
+
+.eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: 26px;
+  }
+  .section-title {
+    font-size: 19px;
+  }
+}
+
+/* ------------------------------------------------------------- 4. Surfaces */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 16px;
+  box-shadow: var(--sh-1);
+  transition: box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+/* Modifier for the ONE dominant card on a screen: a 2.5px accent top edge and
+   a registration tick in the corner instead of more shadow. */
+.card.accent {
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--sh-2);
+}
+
+.card.accent::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, var(--blue), rgba(10, 88, 202, 0.14) 70%, transparent);
+}
+
+.card.tick::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid color-mix(in srgb, var(--blue) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--blue) 40%, transparent);
+}
+
+@media (hover: hover) {
+  .card:hover {
+    box-shadow: var(--sh-2);
+  }
+}
+
+/* ------------------------------------------------------------- 5. Controls */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--blue);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: var(--tr-tight);
+  text-decoration: none;
+  box-shadow: 0 6px 14px -9px color-mix(in srgb, var(--blue) 85%, transparent);
+  transition: transform 0.14s var(--ease), filter 0.14s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(0.95);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn.secondary {
+  background: var(--blue-light);
+  color: var(--blue);
+  box-shadow: none;
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.btn.danger {
+  background: var(--danger);
+  box-shadow: none;
+}
+
+.btn.compact {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  font-size: 12.5px;
+  gap: 6px;
+}
+
+.btn:focus-visible,
+.icon-btn:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+.input,
+.select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 11px 14px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 18%, transparent);
+}
+
+.label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: var(--tr-tight);
+  margin-bottom: 7px;
+  color: var(--text);
+}
+
+/* --------------------------------------------------------------- 6. Status */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: var(--r-pill);
+  background: var(--success-soft);
+  color: var(--success-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+}
+
+.badge.warn {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.badge.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.progress {
+  height: 6px;
+  background: var(--surface-sunken);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.progress > i {
+  position: relative;
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--blue), var(--blue-2));
+  transition: width 0.35s var(--ease-out);
+}
+
+.progress > i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: v5-sheen 2.6s linear infinite;
+}
+
+@keyframes v5-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* ---------------------------------------------------------------- 7. Table */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm);
+}
+
+th {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--ls-label);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ----------------------------------------------------------- 8. Misc detail */
+.term-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  margin-left: 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 700;
+  cursor: help;
+  position: relative;
+  vertical-align: middle;
+}
+
+.term-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 230px;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  background: var(--navy);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+  z-index: 60;
+  box-shadow: var(--sh-3);
+}
+
+.term-help:hover .term-tooltip,
+.term-help:focus .term-tooltip {
+  display: block;
+}
+
+.skeleton {
+  border-radius: var(--r-sm);
+  background: linear-gradient(90deg, var(--surface-sunken) 25%, var(--surface-subtle) 50%, var(--surface-sunken) 75%);
+  background-size: 240% 100%;
+  animation: v5-shimmer 1.4s linear infinite;
+}
+
+@keyframes v5-shimmer {
+  to {
+    background-position: -240% 0;
+  }
+}
+
+/* ---------------------------------------------------------- 9. Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .progress > i::after {
+    display: none;
+  }
+}
