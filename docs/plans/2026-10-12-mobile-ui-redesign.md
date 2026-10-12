@@ -218,7 +218,7 @@ Ordered; each task is one commit (`type(scope): description`).
     screenshots sent to Telegram, committed + pushed per standing instruction;
     eye-review feedback will be applied as follow-up.
 
-- [ ] **Task 9: Harden, retire dead CSS, docs**
+- [x] **Task 9: Harden, retire dead CSS, docs**
   - Files: `app/v5.css`, emptied legacy CSS files, `app/layout.tsx`, `AGENTS.md` +
     `CLAUDE.md` (new, per D6), `docs/internals/overview.md` if architecture notes
     prove necessary
@@ -228,6 +228,9 @@ Ordered; each task is one commit (`type(scope): description`).
   - Verify: `npx tsc --noEmit`; `npm run build`; `npm run lint` → no new errors;
     full sweep screenshots of every route at 390×844 and 1280×800, light + dark →
     user eye-review; AC1–AC7.
+  - Status 2026-10-13: implemented, verified programmatically (see evidence),
+    committed + pushed per standing instruction. Plan stays Active: eye-review
+    approvals (AC8) arrive over Telegram and are applied as follow-ups.
 
 ## Verification evidence
 
@@ -430,13 +433,41 @@ Ordered; each task is one commit (`type(scope): description`).
   pre-existing bug; rules are verbatim copies + vars). Screenshots:
   `/tmp/opencode/review/t8/`.
 
+### Task 9 (2026-10-13, committed + pushed per standing instruction)
+
+- `npx tsc --noEmit` → clean. `npm run build` → success (isolated full-tree copy).
+  `npm run lint` → warnings only, all pre-existing in untouched code; no errors.
+- a11y: `:focus-visible` ring extended to all interactive elements (buttons,
+  inputs, selects, links, switches, tab-cards); `.switch` keeps native
+  `role=switch` semantics; icon buttons gained `aria-label`s along the way.
+- Contrast (computed): light `--muted` → #5b6b80, `--success` → #0e8560,
+  `--success-ink` → #0b7a57, `--danger` → #cf3527 (all ≥4.5 both directions);
+  dark white-text fills overridden (primary #1d64e0, success #177245, danger
+  #dc2626, + chip/switch/segmented) and tint text lightened (#6ea8ff).
+  Documented MID (≥3.0): dark blue body text 3.80 — needs a dual-token refactor,
+  left as follow-up.
+- Reduced motion (AC7): `MotionConfig reducedMotion="user"` around the shell +
+  the v5 blanket rule; verified under emulated `prefers-reduced-motion`: page
+  opacity 1, modal present + opaque, sheen animation off.
+- Class coverage: 232 class tokens in TSX, every one defined in v5/globals (or
+  paired modifiers / Leaflet externals) — script `classcheck.py`.
+- Docs: `AGENTS.md` (repo delta: commands, R-rules, traps) + `CLAUDE.md`
+  (`@AGENTS.md`) created per approved T9 scope.
+- Full sweep 12 routes @390/1280 × light/dark on the final state: 48/48 correct
+  URL + theme, overflow 0. Screenshots: `/tmp/opencode/review/tfinal/`.
+
 ## Handoff
 
-Active. Phase 0 (direction) closed: the user picked `E · Gốc có dấu ấn` from
-`/tmp/opencode/mobile-gu/index-de.png`. Arcade lane rejected as too far from the
-original vibe; light+dark themes must both be kept.
+Active. All 9 implementation tasks are done and pushed; what remains is the
+user's eye-review (screenshots delivered over Telegram after every task) and
+applying any feedback as follow-ups. AC8 is therefore still open by design.
 
-Checkout: `/home/chibao/vietnam-airline-tycoon`, current default branch, worktree
-clean at base revision f22939c. No PR requested. Next action: Task 1.
+Checkout: `/home/chibao/vietnam-airline-tycoon`, branch `main`, in sync with
+`origin/main`. No PR requested. Review harness in `/tmp/opencode/review/`
+(scratchpad): `shot.mjs` (page sweeps), `modal.mjs` (story states), `t4/t6/t7/
+t8.mjs` (task captures), `css-remove.py` (exact-match legacy retirement),
+`sync.sh` + `ensure-dev.sh` (isolated dev on :3100).
 
-Blockers: none.
+Blockers: none. Known follow-up candidates (only if the user asks):
+dual-token refactor for dark blue body text (currently 3.80, ≥3.0 MID),
+advanced-teaser placeholder never live-shot, empty-state shots rely on seed.

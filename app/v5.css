@@ -19,7 +19,7 @@
   --surface-subtle: #f8fafc;
   --surface-sunken: #eef3fa;
   --text: #13243a;
-  --muted: #6b7d94;
+  --muted: #5b6b80;
   --line: #e6ecf5;
   --line-strong: #d6e0ee;
 
@@ -30,10 +30,10 @@
   --accent: #ffb800;
   --accent-soft: #fff5e0;
   --accent-ink: #8a5a00;
-  --success: #12a678;
+  --success: #0e8560;
   --success-soft: #e7f8f2;
-  --success-ink: #0e8f66;
-  --danger: #e84b3c;
+  --success-ink: #0b7a57;
+  --danger: #cf3527;
   --danger-soft: #fdecea;
 
   --r-xs: 6px;
@@ -282,7 +282,12 @@ body {
 .btn:focus-visible,
 .icon-btn:focus-visible,
 a:focus-visible,
-summary:focus-visible {
+summary:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[role='switch']:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: 2px;
   border-radius: var(--r-sm);
@@ -474,6 +479,38 @@ tbody tr:last-child td {
   to {
     background-position: -240% 0;
   }
+}
+
+/* ------------------------------------------------- dark fills (AA white) */
+body.dark .btn:not(.secondary):not(.ghost):not(.success):not(.danger) {
+  background: #1d64e0;
+}
+
+body.dark .btn.success {
+  background: #177245;
+}
+
+body.dark .btn.danger {
+  background: #dc2626;
+}
+
+body.dark .chip.active {
+  background: #1d64e0;
+  border-color: #1d64e0;
+}
+
+body.dark .switch.on {
+  background: #177245;
+}
+
+body.dark .time-speed button.selected,
+body.dark .activity-filters button.active {
+  background: #1d64e0;
+}
+
+body.dark .points-pill,
+body.dark .seg-tabs button[aria-pressed='true'] {
+  color: #6ea8ff;
 }
 
 /* ---------------------------------------------------------- 9. Reduced motion */
