@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { buyListing, listMarket, postListing } from '@/lib/server/onlineStore';
+import { buyListing, listMarket, notifyTrade, postListing } from '@/lib/server/onlineStore';
 import { accountFromRequest } from '@/lib/server/session';
 import { hit, rules } from '@/lib/server/rateLimit';
 
@@ -37,6 +37,9 @@ export async function POST(request: Request) {
     if (id.startsWith('seed-')) return NextResponse.json({ error: 'Tin mau chi de xem — hay mua tin cua nguoi choi that.' }, { status: 400 });
     const result = await buyListing(pilot, id);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 409 });
+    // Báo cho cả người mua lẫn người bán. Không báo lỗi nếu hỏng — giao dịch đã
+    // xong, chỉ thiếu thông báo, không nên làm client tưởng mua thất bại.
+    await notifyTrade(pilot, result.listing).catch(() => undefined);
     return NextResponse.json({ ok: true, listing: result.listing });
   }
 

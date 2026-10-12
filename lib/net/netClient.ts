@@ -12,6 +12,12 @@ export type AlliancePreview = { name: string; members: number; capacity: number;
 export type UsedPlaneListing = { id: string; model: string; wear: number; price: number; seller: string };
 export type Account = { id: string; code: string; name: string; username?: string; createdAt?: number };
 
+/** Thông báo trong hộp thư. */
+export type ServerNotice = {
+  id: string; kind: 'market' | 'auction' | 'social' | 'system';
+  title: string; body: string; at: number; read: boolean;
+};
+
 /** Phiên đấu giá slot sân bay. */
 export type SlotAuction = {
   id: string; airport: string; price: number; slots: number;
@@ -151,6 +157,37 @@ export const netClient = {
     }, null as unknown as { pilots: { code: string; name: string; level: number; reputation: number; value: number }[] });
     if (live?.pilots?.length) return live.pilots;
     return profiles.map(({ code, name, level, reputation, value }) => ({ code, name, level, reputation, value }));
+  },
+
+  /**
+ * Số thông báo chưa đọc, dùng cho badge chuông. Nhẹ: chỉ đếm, không đánh dấu
+ * đã đọc — gọi hàm này không nên tắt badge ngoài ý muốn.
+ */
+  async getUnread(): Promise<number> {
+    return safe(async () => {
+      const r = await fetch('/api/inbox?peek=1', { cache: 'no-store' });
+      if (!r.ok) return 0;
+      return (await r.json() as { unread: number }).unread;
+    }, 0);
+  },
+
+  /** Hộp thư. Mặc định đánh dấu đã đọc; trả kèm `reminders` để toast khi vào game. */
+  async getInbox(): Promise<{ notices: ServerNotice[]; unread: number; reminders: ServerNotice[] } | null> {
+    return safe(async () => {
+      const r = await fetch('/api/inbox', { cache: 'no-store' });
+      if (r.status === 401) return null;
+      if (!r.ok) throw new Error('inbox failed');
+      return await r.json() as { notices: ServerNotice[]; unread: number; reminders: ServerNotice[] };
+    }, null);
+  },
+
+  /** Xoá thông báo đã đọc, giữ tin chưa đọc. */
+  async clearReadNotices(): Promise<{ notices: ServerNotice[] } | null> {
+    return safe(async () => {
+      const r = await fetch('/api/inbox', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'clear' }) });
+      if (!r.ok) throw new Error('inbox failed');
+      return await r.json() as { notices: ServerNotice[] };
+    }, null);
   },
 
   /** Các phiên đấu giá slot đang mở. Gọi hàm này cũng chạy việc chốt các phiên đã hết hạn. */

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { mutateDB, type Pilot, type SlotAuction } from './onlineStore';
+import { findPilotById, mutateDB, type Pilot, type SlotAuction } from './onlineStore';
+import { pushNotice } from './inbox';
 
 /**
  * Đấu giá slot sân bay.
@@ -30,6 +31,14 @@ const startPriceFor = (slots: number): number => Math.max(MIN_BID, slots * 400_0
 
 type SettleResult<T> = { ok: true; auction: SlotAuction } & T | { ok: false; error: string };
 
+/** Kết quả chốt một phiên, để phía ngoài gửi thông báo. */
+export interface SettledAuction {
+  auction: SlotAuction;
+  winnerId: string | null;
+  /** Người bị vượt giá cuối cùng — tiền đã được hoàn ngay lúc bị vượt. */
+  outbidIds: string[];
+}
+
 /**
  * Chốt các phiên đã quá hạn và ghi danh sách còn lại vào `db.auctions`.
  *
@@ -40,21 +49,84 @@ type SettleResult<T> = { ok: true; auction: SlotAuction } & T | { ok: false; err
  * Hàm thuần về phía I/O — chạy bên trong lượt ghi, không tự ghi ra ngoài.
  */
 function settleExpired(db: { pilots: Pilot[]; auctions: SlotAuction[] }, now: number): SlotAuction[] {
-  const expired = db.auctions.filter((a) => a.endsAt <= now);
-  for (const auction of expired) {
-    // Chưa ai đấu vào (`escrowed = 0`) thì hủy im lặng, không tốn tiền ai.
-    if (auction.escrowed <= 0) continue;
-    const winner = db.pilots.find((p) => p.id === auction.bidderId);
-    // Tài khoản đã xoá: không có ai để trả, phiên hủy.
-    if (!winner) continue;
-    // Tiền đã bị giữ lúc đặt giá nên chỉ cần xác nhận vẫn còn đủ trước khi trừ
-    // nốt — phòng khi tài khoản bị sửa dữ liệu ngoài dự kiến.
-    if (winner.value < auction.escrowed) continue;
-    winner.value -= auction.escrowed;
-    winner.slots = (winner.slots ?? 0) + auction.slots;
-  }
+  for (const settled of settleAndCollect(db, now)) report(settled);
   db.auctions = db.auctions.filter((a) => a.endsAt > now);
   return db.auctions;
+}
+
+/** Như `settleExpired` nhưng trả về danh sách phiên vừa chốt thay vì báo ngay. */
+function settleAndCollect(db: { pilots: Pilot[]; auctions: SlotAuction[] }, now: number): SettledAuction[] {
+  const expired = db.auctions.filter((a) => a.endsAt <= now);
+  if (expired.length === 0) return [];
+
+  // Người từng đứng giá của phiên, để biết ai cần nhắc "bạn đã thua" — tiền của
+  // họ đã được hoàn ngay lúc bị vượt, thông báo chỉ để cho biết kết quả.
+  const bidders = new Map<string, string[]>();
+  for (const auction of expired) {
+    if (!auction.bidderId) continue;
+    bidders.set(auction.id, [...(bidders.get(auction.id) ?? []), auction.bidderId]);
+  }
+
+  const settled: SettledAuction[] = [];
+  for (const auction of expired) {
+    let winnerId: string | null = null;
+    // Chưa ai đấu vào (`escrowed = 0`) thì hủy im lặng, không tốn tiền ai.
+    if (auction.escrowed > 0) {
+      const winner = db.pilots.find((p) => p.id === auction.bidderId);
+      // Tiền đã bị giữ lúc đặt giá nên chỉ cần xác nhận vẫn còn đủ trước khi trừ
+      // nốt — phòng khi tài khoản bị sửa dữ liệu ngoài dự kiến.
+      if (winner && winner.value >= auction.escrowed) {
+        winner.value -= auction.escrowed;
+        winner.slots = (winner.slots ?? 0) + auction.slots;
+        winnerId = winner.id;
+      }
+      // Tài khoản đã xoá, hoặc dữ liệu bị sửa ngoài dự kiến: phiên hủy.
+    }
+    const outbidIds = (bidders.get(auction.id) ?? []).filter((id) => id !== winnerId);
+    settled.push({ auction, winnerId, outbidIds });
+  }
+
+  db.auctions = db.auctions.filter((a) => a.endsAt > now);
+  return settled;
+}
+
+/**
+ * Gửi thông báo cho các bên liên quan.
+ *
+ * Không await: ghi thông báo là một khoá riêng, thất bại ở đây không được làm
+ * hỏng kết quả trả về cho client (tiền đã được xử lý xong rồi).
+ */
+function report(item: SettledAuction): void {
+  const recipients = new Set<string>([item.auction.openerId, ...item.outbidIds, ...(item.winnerId ? [item.winnerId] : [])]);
+  for (const pilotId of recipients) {
+    void pushPilotNotice(pilotId, item).catch(() => undefined);
+  }
+}
+
+async function pushPilotNotice(pilotId: string, item: SettledAuction): Promise<void> {
+  const pilot = await findPilotById(pilotId);
+  if (!pilot) return;
+  const { auction, winnerId } = item;
+  if (pilot.id === winnerId) {
+    await pushNotice(pilot, {
+      kind: 'auction', title: 'Thắng phiên đấu giá',
+      body: `Ban da trung gia ${auction.price.toLocaleString('vi-VN')} $ cho ${auction.slots} slot tai san bay ${auction.airport}.`,
+    });
+    return;
+  }
+  if (pilot.id === item.auction.openerId && item.outbidIds.length === 0) {
+    await pushNotice(pilot, {
+      kind: 'auction', title: 'Phiên đấu giá kết thúc',
+      body: `Khong ai dat gia cho slot ${auction.airport}, phien da dong.`,
+    });
+    return;
+  }
+  if (item.outbidIds.includes(pilot.id)) {
+    await pushNotice(pilot, {
+      kind: 'auction', title: 'Bạn đã bị vượt giá',
+      body: `Gia cua ban cho slot ${auction.airport} da bi vuot. Tien da hoan ve tai khoan.`,
+    });
+  }
 }
 
 /**

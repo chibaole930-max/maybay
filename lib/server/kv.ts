@@ -141,11 +141,16 @@ export async function kvSetJsonEx(key: string, value: unknown, seconds: number):
 /**
  * Doc gia tri co thoi han. Tra `fallback` neu key khong co HOAC DA HET HAN.
  *
- * O che do file boi thoi han vao chinh ban ghi (xem `kvSetJsonEx`), nen ham nay
- * phai mo boc va kiem tra `expiresAt` — khong giong `kvGetJson`.
+ * **Chi dung cho ban ghi da duoc ghi bang `kvSetJsonEx`.** O che do file, ham ghi
+ * boi thoi han vao chinh ban ghi (xem `kvSetJsonEx`) nen ham nay phai mo boc va
+ * kiem tra `expiresAt`. Doc mot ban ghi ghi bang `kvSetJson` — tuc khong co vo
+ * `{ value, expiresAt }` — se khong nhien ra gi va tra ve `fallback`, tuc la
+ * du lieu bi bo qua trong im lang. Do do ban ghi khong co TTL thi dung
+ * `kvGetJson`.
+ *
  * O che do KV, Redis tu xoa key het han nen doc nhu binh thuong.
  */
-export async function kvGetJsonEx<T>(key: string, fallback: T): Promise<T> {
+export async function kvGetJsonWithTtl<T>(key: string, fallback: T): Promise<T> {
   if (storageMode === 'kv') return kvGetJson(key, fallback);
   const raw = await kvGetRaw(key);
   if (raw === null) return fallback;

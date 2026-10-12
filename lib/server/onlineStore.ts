@@ -1,6 +1,8 @@
 import { randomUUID, randomBytes } from 'node:crypto';
-import { kvGetJson, kvGetJsonEx, kvMutateJson, kvSetJsonEx, kvSetJsonNx, kvDel, storageMode } from './kv';
+import { kvGetJson, kvGetJsonWithTtl, kvMutateJson, kvSetJsonEx, kvSetJsonNx, kvDel, storageMode } from './kv';
 import { hashPassword, verifyPassword, checkPassword, checkUsername, checkDisplayName, normalizeUsername, normalizeDisplayName } from './password';
+// `inbox` chỉ import *kiểu* `Pilot` nên không có vòng import lúc chạy.
+import { pushToMany } from './inbox';
 
 /** Ngay theo lich dung UTC — may chu chay o vung gio khac nhau van thong nhat. */
 export const dayKeyFor = (now: number): string => new Date(now).toISOString().slice(0, 10);
@@ -238,7 +240,7 @@ export async function destroySession(token: string): Promise<void> {
  */
 export async function resolveSession(token: string): Promise<Pilot | null> {
   if (!token) return null;
-  const session = await kvGetJsonEx<{ pilotId?: string; epoch?: number } | null>(SESSION_KEY(token), null);
+  const session = await kvGetJsonWithTtl<{ pilotId?: string; epoch?: number } | null>(SESSION_KEY(token), null);
   if (!session?.pilotId) return null;
   const db = await readDB();
   const pilot = db.pilots.find((p) => p.id === session.pilotId);
@@ -510,6 +512,34 @@ export async function buyListing(buyer: Pilot, id: string): Promise<{ ok: true; 
     db.listings = pruneListings(db.listings);
     return { next: db, result: { ok: true as const, listing } };
   });
+}
+
+/**
+ * Thong bao cho hai ben cua mot giao dich vua xong.
+ * Goi sau `buyListing` — khong chay trong cung luot ghi vi ghi hop thu la mot
+ * khoa rieng, khong nen lam cham luot ghi `vat:db`.
+ */
+export async function notifyTrade(buyer: Pilot, listing: Listing): Promise<void> {
+  const seller = await findPilotById(listing.sellerId);
+  await pushToMany([buyer, ...(seller ? [seller] : [])], (pilot) => {
+    if (pilot.id === buyer.id) {
+      return {
+        kind: 'market',
+        title: 'Mua may bay thanh cong',
+        body: `Ban da mua ${listing.model} cua ${listing.seller} voi gia ${listing.price.toLocaleString('vi-VN')} $.`,
+      };
+    }
+    return {
+      kind: 'market',
+      title: 'May bay da duoc ban',
+      body: `${listing.model} da duoc ${buyer.name} mua voi gia ${listing.price.toLocaleString('vi-VN')} $.`,
+    };
+  });
+}
+
+export async function findPilotById(pilotId: string): Promise<Pilot | null> {
+  const db = await readDB();
+  return db.pilots.find((p) => p.id === pilotId) ?? null;
 }
 
 export async function getAlliance(): Promise<{ alliance: Alliance | null; members: number }> {
