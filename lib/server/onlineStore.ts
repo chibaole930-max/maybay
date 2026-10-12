@@ -76,6 +76,22 @@ export interface ChatMsg {
 }
 export interface SlotAuction { id: string; airport: string; price: number; bidder: string; endsAt: number; }
 
+/**
+ * Mot lan mua ban tren cho may bay cu.
+ * `vat:db` la mot key duy nhat nen chi giu gan nhat mot chuc ban ghi cho moi ben.
+ */
+export interface Trade {
+  id: string;
+  listingId: string;
+  model: string;
+  price: number;
+  buyerId: string;
+  buyerName: string;
+  sellerId: string;
+  sellerName: string;
+  at: number;
+}
+
 interface DB {
   pilots: Pilot[];
   listings: Listing[];
@@ -83,6 +99,7 @@ interface DB {
   members: { allianceId: string; pilotId: string }[];
   chat: ChatMsg[];
   auctions: SlotAuction[];
+  trades: Trade[];
   seasonId: string;
   seasonEndsAt: number;
 }
@@ -109,7 +126,7 @@ export function worldState(now = Date.now()) {
 }
 
 const freshDB = (): DB => ({
-  pilots: [], listings: [], alliances: [], members: [], chat: [], auctions: [],
+  pilots: [], listings: [], alliances: [], members: [], chat: [], auctions: [], trades: [],
   seasonId: seasonIdFor(Date.now()), seasonEndsAt: seasonEndFor(Date.now()),
 });
 
@@ -122,12 +139,19 @@ const normalize = (raw: DB | null): DB => {
     members: Array.isArray(db.members) ? db.members : [],
     chat: Array.isArray(db.chat) ? db.chat : [],
     auctions: Array.isArray(db.auctions) ? db.auctions : [],
+    trades: Array.isArray(db.trades) ? db.trades : [],
     seasonId: db.seasonId || seasonIdFor(Date.now()),
     seasonEndsAt: db.seasonEndsAt || seasonEndFor(Date.now()),
   };
 };
 
-const readDB = (): Promise<DB> => kvGetJson<DB>(DB_KEY, freshDB()).then(normalize);
+/**
+ * Gioi han lich su giao dich. `vat:db` la mot key duy nhat nen phai cat.
+ * 200 ban ghi la du de moi tai khoan xem lai lich su gan nhat cua minh.
+ */
+const MAX_TRADES = 200;
+
+export const readDB = (): Promise<DB> => kvGetJson<DB>(DB_KEY, freshDB()).then(normalize);
 
 /** Ban thong tin an toan de tra ve client (khong bao gio lo salt/hash). */
 export const publicPilot = (p: Pilot) => ({
@@ -404,6 +428,16 @@ export async function buyListing(buyer: Pilot, id: string): Promise<{ ok: true; 
     listing.sold = true;
     listing.buyerId = buyer.id;
     listing.soldAt = Date.now();
+
+    // Ghi lai giao dich de lanh buoc "thanh tich giao dich" trong ho so pilot.
+    db.trades.push({
+      id: randomUUID(), listingId: listing.id, model: listing.model, price: listing.price,
+      buyerId: buyer.id, buyerName: buyer.name.slice(0, 32),
+      sellerId: listing.sellerId, sellerName: listing.seller,
+      at: listing.soldAt,
+    });
+    db.trades = db.trades.slice(-MAX_TRADES);
+
     db.listings = pruneListings(db.listings);
     return { next: db, result: { ok: true as const, listing } };
   });

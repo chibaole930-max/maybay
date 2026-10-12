@@ -19,7 +19,7 @@ import { GameShell, PageHeading } from '@/components/game-shell';
 import { useGameStore } from '@/store/useGameStore';
 import { aiAirlines } from '@/lib/mock-data';
 import { airlineValue, formatCurrency } from '@/lib/formulas';
-import { netClient } from '@/lib/net/netClient';
+import { netClient, type PilotProfile } from '@/lib/net/netClient';
 
 interface CompetitorProfile {
   name: string;
@@ -53,9 +53,28 @@ function LeaderboardContent() {
   const [friendCodeInput, setFriendCodeInput] = useState('');
   const [copied, setCopied] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<CompetitorProfile | null>(null);
+  /** Chi tiết thật từ server (thứ hạng, thành tích, huy chương) — `null` khi hồ sơ là dữ liệu minh họa. */
+  const [profileDetail, setProfileDetail] = useState<(PilotProfile & { fleet: string[]; topRoutes: string[] }) | null>(null);
+  const [ownProfile, setOwnProfile] = useState<PilotProfile | null>(null);
+  const [ownProfileLoading, setOwnProfileLoading] = useState(true);
 
   const playerValuation = airlineValue(airline?.cash || 0, planes, airports);
   const playerFriendCode = airline?.inviteCode || 'VNA3K9';
+
+  // Thành tích của chính mình.
+  //
+  // Gọi thẳng `netClient.getOwnProfile()` chứ không dùng `useOnlineSync`: hook đó
+  // đã được `GameShell` gọi một lần, dùng thêm ở đây sẽ tạo thêm bộ đếm heartbeat
+  // và lưu tự động — tức là gấp đôi số request lên máy chủ.
+  useEffect(() => {
+    let stop = false;
+    netClient.getOwnProfile().then((profile) => {
+      if (stop) return;
+      setOwnProfile(profile);
+      setOwnProfileLoading(false);
+    });
+    return () => { stop = true; };
+  }, []);
 
   // Generate 20 AI competitors
   const competitorsList: CompetitorProfile[] = useMemo(() => {
@@ -126,10 +145,13 @@ function LeaderboardContent() {
     if (!friendCodeInput.trim()) return;
     const code=friendCodeInput.trim().toUpperCase();
     const found=competitorsList.find(c=>c.friendCode.toUpperCase()===code);
-    if(found){setSelectedProfile(found);update(s=>({...s,friendCodes:[...new Set([...(s.friendCodes||[]),code])]}));notify(`Đã tìm thấy thông tin hãng "${found.name}" và lưu vào danh sách bạn bè.`, 'info');return;}
+    if(found){setProfileDetail(null);setSelectedProfile(found);update(s=>({...s,friendCodes:[...new Set([...(s.friendCodes||[]),code])]}));notify(`Đã tìm thấy thông tin hãng "${found.name}" và lưu vào danh sách bạn bè.`, 'info');return;}
+    // Hỏi server trước — hồ sơ thật có thứ hạng, thành tích giao dịch và huy chương.
+    const live=await netClient.getPilotProfile(code);
+    if(live){setProfileDetail(live);setSelectedProfile({name:live.pilot.name,valuation:live.pilot.value,level:live.pilot.level,planesCount:live.pilot.planes,routesCount:live.pilot.routes,baseHub:'—',friendCode:live.pilot.code,reputation:live.pilot.reputation,fleet:live.fleet,topRoutes:live.topRoutes});update(s=>({...s,friendCodes:[...new Set([...(s.friendCodes||[]),code])]}));notify(`Đã tìm thấy hồ sơ ${live.pilot.name}.`, 'success');return;}
     const profile=await netClient.getFriendProfile(code);
-    if(profile){setSelectedProfile({name:profile.name,valuation:profile.value,level:profile.level,planesCount:profile.fleet.length,routesCount:profile.topRoutes.length,baseHub:'SGN',friendCode:profile.code,reputation:profile.reputation,fleet:profile.fleet,topRoutes:profile.topRoutes});update(s=>({...s,friendCodes:[...new Set([...(s.friendCodes||[]),code])]}));notify(`Đã tìm thấy hồ sơ mock của ${profile.name}.`, 'success');}
-    else notify('Không tìm thấy mã hãng. Hãy thử VNA3K9, SAI8Q2 hoặc BAY5M1.', 'warn');
+    if(profile){setProfileDetail(null);setSelectedProfile({name:profile.name,valuation:profile.value,level:profile.level,planesCount:profile.fleet.length,routesCount:profile.topRoutes.length,baseHub:'SGN',friendCode:profile.code,reputation:profile.reputation,fleet:profile.fleet,topRoutes:profile.topRoutes});update(s=>({...s,friendCodes:[...new Set([...(s.friendCodes||[]),code])]}));notify(`Đã tìm thấy hồ sơ minh họa của ${profile.name}.`, 'success');}
+    else notify('Không tìm thấy mã hãng này trên máy chủ.', 'warn');
   };
 
   return (
@@ -196,7 +218,7 @@ function LeaderboardContent() {
               <div
                 key={comp.name}
                 className={`card ${comp.isHardcore?'hardcore-frame':''}`}
-                onClick={() => setSelectedProfile(comp)}
+                onClick={() => { setProfileDetail(null); setSelectedProfile(comp); }}
                 style={{
                   textAlign: 'center',
                   cursor: 'pointer',
@@ -251,7 +273,7 @@ function LeaderboardContent() {
                   {fullList.map((comp, idx) => (
                     <tr
                       key={comp.name}
-                      onClick={() => setSelectedProfile(comp)}
+                      onClick={() => { setProfileDetail(null); setSelectedProfile(comp); }}
                       style={{
                         cursor: 'pointer',
                         background: comp.isPlayer ? 'rgba(10, 88, 202, 0.08)' : undefined,
@@ -351,6 +373,60 @@ function LeaderboardContent() {
               <code style={{ color: '#0a58ca' }}>SAI8Q2</code> (Saigon Air), <code style={{color:'#0a58ca'}}>BAY5M1</code> (Cánh Én Việt)
             </div>
           </div>
+
+          {/* Thành tích của bạn — dữ liệu thật từ máy chủ, cần đăng nhập */}
+          <div className="card">
+            <h2 className="section-title">Thành tích của hãng bạn</h2>
+            {ownProfileLoading && (
+              <p className="muted" style={{ fontSize: 13 }}>Đang tải thành tích…</p>
+            )}
+            {!ownProfileLoading && !ownProfile && (
+              <p className="muted" style={{ fontSize: 13 }}>
+                Đăng nhập để xem thứ hạng, thành tích giao dịch và huy chương trên máy chủ.
+              </p>
+            )}
+            {ownProfile && (
+              <>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '14px 0' }}>
+                  <span className="badge">Hạng #{ownProfile.rank}/{ownProfile.total}</span>
+                  <span className="badge">{ownProfile.tradeStats.sold} lần bán</span>
+                  <span className="badge">{ownProfile.tradeStats.bought} lần mua</span>
+                  <span className="badge">{formatCurrency(ownProfile.tradeStats.volume, currency)} đã giao dịch</span>
+                </div>
+                {ownProfile.achievements.length > 0 ? (
+                  <>
+                    <span className="label">Huy chương</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                      {ownProfile.achievements.map((a) => (
+                        <span key={a.id} className="badge" style={{ cursor: 'help' }} title={a.detail}>{a.label}</span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="muted" style={{ fontSize: 12 }}>Chưa có huy chương nào — hãy bán chiếc máy bay đầu tiên trên chợ.</p>
+                )}
+                {ownProfile.trades.length > 0 && (
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr><th>LOẠI</th><th>MÁY BAY</th><th>ĐỐI TÁC</th><th>GIÁ</th></tr>
+                      </thead>
+                      <tbody>
+                        {ownProfile.trades.slice(0, 8).map((t) => (
+                          <tr key={t.id}>
+                            <td><b style={{ color: t.side === 'mua' ? '#dc2626' : '#16a34a' }}>{t.side === 'mua' ? 'Mua' : 'Bán'}</b></td>
+                            <td>{t.model}</td>
+                            <td className="muted">{t.counterparty}</td>
+                            <td>{formatCurrency(t.price, currency)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -366,7 +442,7 @@ function LeaderboardContent() {
             placeItems: 'center',
             padding: 16,
           }}
-          onClick={() => setSelectedProfile(null)}
+          onClick={() => { setProfileDetail(null); setSelectedProfile(null); }}
         >
           <div
             className="card"
@@ -406,10 +482,58 @@ function LeaderboardContent() {
                 <span className="muted">Số đường bay đang bay:</span>
                 <b>{selectedProfile.routesCount} tuyến</b>
               </div>
-              {selectedProfile.reputation!==undefined&&<div style={{display:'flex',justifyContent:'space-between'}}><span className="muted">Danh tiếng:</span><b>{selectedProfile.reputation}/100 · {Math.max(1,Math.round(selectedProfile.reputation/20))} sao</b></div>}{selectedProfile.fleet&&<div><span className="muted">Đội bay:</span><p>{selectedProfile.fleet.join(' · ')}</p></div>}{selectedProfile.topRoutes&&<div><span className="muted">Tuyến nổi bật:</span><p>{selectedProfile.topRoutes.join(' · ')}</p></div>}
+              {selectedProfile.reputation!==undefined&&<div style={{display:'flex',justifyContent:'space-between'}}><span className="muted">Danh tiếng:</span><b>{selectedProfile.reputation}/100 · {Math.max(1,Math.round(selectedProfile.reputation/20))} sao</b></div>}
+              {profileDetail && (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span className="muted">Thứ hạng:</span>
+                    <b>#{profileDetail.rank}/{profileDetail.total}</b>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span className="muted">Giao dịch:</span>
+                    <b>{profileDetail.tradeStats.sold} bán · {profileDetail.tradeStats.bought} mua</b>
+                  </div>
+                  {profileDetail.tradeStats.volume > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span className="muted">Tổng khối lượng:</span>
+                      <b>{formatCurrency(profileDetail.tradeStats.volume, currency)}</b>
+                    </div>
+                  )}
+                </>
+              )}
+              {selectedProfile.fleet?.length ? <div><span className="muted">Đội bay:</span><p>{selectedProfile.fleet.join(' · ')}</p></div> : null}
+              {selectedProfile.topRoutes?.length ? <div><span className="muted">Tuyến nổi bật:</span><p>{selectedProfile.topRoutes.join(' · ')}</p></div> : null}
+              {profileDetail && profileDetail.achievements.length > 0 && (
+                <div>
+                  <span className="muted">Huy chương:</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                    {profileDetail.achievements.map((a) => (
+                      <span key={a.id} className="badge" style={{ fontSize: 11, cursor: 'help' }} title={a.detail}>
+                        {a.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {profileDetail && profileDetail.trades.length > 0 && (
+                <div>
+                  <span className="muted">Giao dịch gần đây:</span>
+                  <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {profileDetail.trades.slice(0, 5).map((t) => (
+                      <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                        <span className="muted">
+                          {t.side === 'mua' ? 'Mua' : 'Bán'} {t.model}
+                          {t.counterparty !== '—' ? ` · ${t.counterparty}` : ''}
+                        </span>
+                        <b>{formatCurrency(t.price, currency)}</b>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <button className="btn" style={{ width: '100%', marginTop: 8 }} onClick={() => setSelectedProfile(null)}>
+            <button className="btn" style={{ width: '100%', marginTop: 8 }} onClick={() => { setProfileDetail(null); setSelectedProfile(null); }}>
               Đóng
             </button>
           </div>

@@ -12,6 +12,20 @@ export type AlliancePreview = { name: string; members: number; capacity: number;
 export type UsedPlaneListing = { id: string; model: string; wear: number; price: number; seller: string };
 export type Account = { id: string; code: string; name: string; username?: string; createdAt?: number };
 
+/** Hồ sơ pilot từ server. Không có `id` / `username` — server cố tình giấu khoá bản ghi. */
+export type PilotProfile = {
+  pilot: {
+    code: string; name: string; value: number; level: number;
+    planes: number; routes: number; reputation: number; updatedAt: number;
+    createdAt?: number;
+  };
+  rank: number;
+  total: number;
+  trades: { id: string; model: string; price: number; at: number; side: 'mua' | 'ban'; counterparty: string }[];
+  achievements: { id: string; label: string; detail: string }[];
+  tradeStats: { sold: number; bought: number; volume: number };
+};
+
 const profiles: MockProfile[] = [
   { code: 'VNA3K9', name: 'VietSky', level: 18, reputation: 86, fleet: ['A320neo', 'ATR72', 'B787-9'], topRoutes: ['SGN → DAD', 'HAN → SIN'], value: 62500000 },
   { code: 'SAI8Q2', name: 'Saigon Air', level: 15, reputation: 78, fleet: ['A321LR', 'A320neo'], topRoutes: ['SGN → BKK', 'SGN → HAN'], value: 41200000 },
@@ -121,11 +135,48 @@ export const netClient = {
     return profiles.map(({ code, name, level, reputation, value }) => ({ code, name, level, reputation, value }));
   },
 
+  /** Hồ sơ công khai của một pilot theo mã hãng (`VNAxxxx`). `null` khi không tồn tại. */
+  async getPilotProfile(code: string): Promise<(PilotProfile & { fleet: string[]; topRoutes: string[] }) | null> {
+    try {
+      const r = await fetch(`/api/pilot?code=${encodeURIComponent(code.trim())}&stats=1`, { cache: 'no-store' });
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error('profile failed');
+      const json = (await r.json()) as { profile: PilotProfile; stats?: { planes: { model: string; count: number }[]; topRoutes: string[] } | null };
+      const profile = json.profile;
+      const stats = json.stats;
+      return {
+        ...profile,
+        fleet: stats?.planes.map((p) => (p.count > 1 ? `${p.model} ×${p.count}` : p.model)) ?? [],
+        topRoutes: stats?.topRoutes ?? [],
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  /** Hồ sơ của chính mình (giao dịch, huy chương, thứ hạng). */
+  async getOwnProfile(): Promise<PilotProfile | null> {
+    return safe(async () => {
+      const r = await fetch('/api/pilot', { cache: 'no-store' });
+      if (r.status === 401) return null;
+      if (!r.ok) throw new Error('profile failed');
+      const json = (await r.json()) as { profile: PilotProfile };
+      return json.profile;
+    }, null);
+  },
+
   async getFriendProfile(code: string) {
-    const all = await this.getLeaderboard();
-    const found = all.find((p) => p.code.toUpperCase() === code.trim().toUpperCase());
-    if (found) return { code: found.code, name: found.name, level: found.level, reputation: found.reputation, fleet: ['—'], topRoutes: ['—'], value: found.value };
-    return profiles.find((p) => p.code.toUpperCase() === code.trim().toUpperCase()) ?? null;
+    const live = await this.getPilotProfile(code);
+    if (live) {
+      return {
+        code: live.pilot.code, name: live.pilot.name, level: live.pilot.level,
+        reputation: live.pilot.reputation, fleet: live.fleet, topRoutes: live.topRoutes,
+        value: live.pilot.value, rank: live.rank, total: live.total,
+        achievements: live.achievements, tradeStats: live.tradeStats,
+      };
+    }
+    const found = profiles.find((p) => p.code.toUpperCase() === code.trim().toUpperCase());
+    return found ?? null;
   },
 
   async getWorld() {
