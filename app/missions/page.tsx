@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Trophy,
   Target,
@@ -16,6 +16,7 @@ import { GameShell, PageHeading } from '@/components/game-shell';
 import { useGameStore } from '@/store/useGameStore';
 import { achievementsList } from '@/lib/mock-data';
 import { airlineValue, formatCurrency } from '@/lib/formulas';
+import { netClient, type DailyMissions } from '@/lib/net/netClient';
 import type { Mission } from '@/types';
 
 function MissionsContent() {
@@ -30,9 +31,41 @@ function MissionsContent() {
     research,
     currency,
     weeklySeason,
+    notify,
+    update,
   } = useGameStore();
 
   const [tab, setTab] = useState<'starter' | 'daily' | 'weekly' | 'achievements'>('starter');
+
+  // Nhiem vu hang ngay TOAN SERVER. `null` = chua dang nhap (hoac server khong
+  // tra duoc) — khi do tab van hien phan nhiem vu cuc bo ben duoi.
+  const [serverMissions, setServerMissions] = useState<DailyMissions | null>(null);
+  const [serverBusy, setServerBusy] = useState(false);
+
+  const loadServerMissions = async () => {
+    setServerBusy(true);
+    const result = await netClient.getDailyMissions();
+    setServerBusy(false);
+    if (result) setServerMissions(result);
+  };
+
+  useEffect(() => {
+    // Poll vua thoi: nhiem vu doi muc khi len cap / tang gia tri, va reset 0h UTC.
+    void loadServerMissions();
+    const timer = setInterval(() => void loadServerMissions(), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const claimServerMission = async (id: string) => {
+    setServerBusy(true);
+    const result = await netClient.claimDailyMission(id);
+    setServerBusy(false);
+    if (result.error) notify(result.error, 'warn');
+    // Server tra ve bo nhiemvu da cap nhat — dung luon de khong phai do lai.
+    if (result.missions) setServerMissions(result.missions);
+    // Gia tri vua cong thuong can vao tien mat cua nguoi choi ngay.
+    if (result.reward) update((s) => ({ ...s, airline: s.airline ? { ...s.airline, cash: s.airline.cash + result.reward! } : s.airline }));
+  };
 
   const currentCash = airline?.cash || 0;
   const currentValuation = airlineValue(currentCash, planes, airports);
@@ -311,6 +344,67 @@ function MissionsContent() {
             );
           })}
           <div className="muted" style={{ fontSize: 11 }}>Reset lúc 0h hàng ngày. Chuỗi điểm danh từ 3 ngày tăng trần offline.</div>
+
+          {/* Nhiem vu hang ngay TOAN SERVER — chi so tinh tren may chu, khac
+              hoan toan voi bo nhiemvu cuc bo o tren. */}
+          {serverMissions && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
+              <div className="card" style={{ background: 'rgba(10, 88, 202, 0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <Sparkles size={18} color="#0a58ca" />
+                  <b style={{ fontSize: 15 }}>Nhiệm vụ toàn server</b>
+                  {serverMissions.server && (
+                    <span className="muted" style={{ fontSize: 12 }}>
+                      {serverMissions.server.participating}/{serverMissions.server.total} hãng đang chơi ·{' '}
+                      {serverMissions.server.totalPlanes.toLocaleString('vi-VN')} máy bay ·{' '}
+                      {serverMissions.server.totalRoutes.toLocaleString('vi-VN')} đường bay
+                    </span>
+                  )}
+                  <button className="btn ghost" onClick={() => void loadServerMissions()} style={{ marginLeft: 'auto', padding: '6px 12px', fontSize: 12 }}>
+                    {serverBusy ? 'Đang tải…' : 'Làm mới'}
+                  </button>
+                </div>
+                <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>
+                  Reset 0h giờ Việt Nam · hoàn thành 4 nhiệm vụ để tối đa hoá thưởng hôm nay
+                </div>
+              </div>
+
+              {serverMissions.missions.map((m) => {
+                const percent = Math.min(100, Math.round((m.progress / m.target) * 100));
+                const claimable = m.done && !m.claimed;
+                return (
+                  <div key={m.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: 260 }}>
+                      <b style={{ fontSize: 15 }}>{m.title}</b>
+                      <div className="muted" style={{ fontSize: 12, margin: '4px 0 8px' }}>{m.description}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div className="progress" style={{ flex: 1, height: 6 }}>
+                          <i style={{ width: `${percent}%`, background: m.done ? '#12a678' : '#0a58ca' }} />
+                        </div>
+                        <span className="muted" style={{ fontSize: 11, minWidth: 96, textAlign: 'right' }}>
+                          {Math.floor(m.progress).toLocaleString('vi-VN')} / {m.target.toLocaleString('vi-VN')}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="muted" style={{ fontSize: 11 }}>THƯỞNG</div>
+                        <b style={{ fontSize: 15, color: '#0a58ca' }}>+{formatCurrency(m.reward, currency)}</b>
+                      </div>
+                      <button
+                        className="btn"
+                        disabled={!claimable || serverBusy}
+                        onClick={() => void claimServerMission(m.id)}
+                        style={{ background: claimable ? '#12a678' : undefined }}
+                      >
+                        {m.claimed ? '✓ Đã nhận' : m.done ? 'Nhận thưởng 🎁' : 'Đang làm'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
       {tab === 'weekly' && (

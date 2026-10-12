@@ -2,6 +2,9 @@ import { randomUUID, randomBytes } from 'node:crypto';
 import { kvGetJson, kvGetJsonEx, kvMutateJson, kvSetJsonEx, kvSetJsonNx, kvDel, storageMode } from './kv';
 import { hashPassword, verifyPassword, checkPassword, checkUsername, checkDisplayName, normalizeUsername, normalizeDisplayName } from './password';
 
+/** Ngay theo lich dung UTC — may chu chay o vung gio khac nhau van thong nhat. */
+export const dayKeyFor = (now: number): string => new Date(now).toISOString().slice(0, 10);
+
 /**
  * DB online cho moi tinh nang nhieu nguoi choi: BXH, cho may bay cu, lien minh, chat, dau gia.
  *
@@ -58,6 +61,19 @@ export interface Pilot {
   /** Cho phep client tang gia tri BXH toi da bao nhieu lan trong mot khoang thoi gian. */
   creditUsed?: number;
   creditWindowAt?: number;
+  /**
+ * Chi so cao nhat da dat trong ngay, tach theo tung loai — dung tinh tien do
+ * nhiem vu hang ngay. `bestToday.value` chi la muc cua gia tri hang, khong phai
+ * "chi so lon nhat trong ngay" chung chung (do loi do day se lam sai tien do).
+ */
+  bestToday?: { day: string; value: number; level: number; planes: number; routes: number };
+  /**
+   * Chi so luc 0h cua ngay — dung lam moc cho bo nhiemvu. Chi gan mot lan
+   * trong ngay, xem `lib/server/missions.ts`.
+   */
+  baselineToday?: { day: string; value: number; level: number; planes: number; routes: number };
+  /** Nhiemvu -> ngay da nhan thuong. Giu cung ban ghi nen khong nhai duoc. */
+  claimedMissions?: Record<string, string>;
 }
 
 export interface Listing {
@@ -152,6 +168,21 @@ const normalize = (raw: DB | null): DB => {
 const MAX_TRADES = 200;
 
 export const readDB = (): Promise<DB> => kvGetJson<DB>(DB_KEY, freshDB()).then(normalize);
+
+/**
+ * Doc -> sua -> ghi `vat:db` trong mot luot.
+ *
+ * Ham nay boc lai `kvMutateJson` va **tu dien `freshDB()`** nen thoi gian luu
+ * nham lung: truyen mot `fallback` rong se ngay lap tuc xoa sach database khi
+ * key chua co. Dung ham nay thay vi goi `kvMutateJson(DB_KEY, ...)` truc tiep.
+ */
+export function mutateDB<R>(mutate: (db: DB) => R | Promise<R>): Promise<R> {
+  return kvMutateJson<DB, R>(DB_KEY, freshDB(), (raw) => {
+    const db = normalize(raw);
+    const result = mutate(db);
+    return Promise.resolve(result).then((value) => ({ next: db, result: value }));
+  });
+}
 
 /** Ban thong tin an toan de tra ve client (khong bao gio lo salt/hash). */
 export const publicPilot = (p: Pilot) => ({
@@ -350,6 +381,20 @@ export async function updatePilotStats(pilotId: string, input: { name?: string; 
     target.routes = Math.max(0, Math.min(200, input.routes));
     target.reputation = Math.max(0, Math.min(100, input.reputation));
     target.updatedAt = now;
+
+    // Luu chi so cao nhat cua hom nay cho nhiem vu hang ngay. Dung `target`
+    // (gia tri da qua kiem han muc cong) chu khong dung `claimed` cua client.
+    const day = dayKeyFor(now);
+    const freshDay = target.bestToday?.day !== day;
+    const prev = freshDay ? { value: 0, level: 0, planes: 0, routes: 0 } : (target.bestToday ?? { value: 0, level: 0, planes: 0, routes: 0 });
+    target.bestToday = {
+      day,
+      value: Math.max(prev.value, target.value),
+      level: Math.max(prev.level, target.level),
+      planes: Math.max(prev.planes, target.planes),
+      routes: Math.max(prev.routes, target.routes),
+    };
+
     return { next: db, result: { value: target.value, clamped: target.value < claimed } };
   });
 }

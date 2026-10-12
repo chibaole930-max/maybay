@@ -12,6 +12,18 @@ export type AlliancePreview = { name: string; members: number; capacity: number;
 export type UsedPlaneListing = { id: string; model: string; wear: number; price: number; seller: string };
 export type Account = { id: string; code: string; name: string; username?: string; createdAt?: number };
 
+/** Nhiệm vụ hằng ngày toàn server — tiến độ do máy chủ tính. */
+export type DailyMissions = {
+  dayKey: string;
+  endsAt: number;
+  missions: {
+    id: string; title: string; description: string; target: number;
+    metric: 'planes' | 'routes' | 'level' | 'value';
+    reward: number; progress: number; done: boolean; claimed: boolean;
+  }[];
+  server: { total: number; participating: number; totalPlanes: number; totalRoutes: number };
+};
+
 /** Hồ sơ pilot từ server. Không có `id` / `username` — server cố tình giấu khoá bản ghi. */
 export type PilotProfile = {
   pilot: {
@@ -133,6 +145,28 @@ export const netClient = {
     }, null as unknown as { pilots: { code: string; name: string; level: number; reputation: number; value: number }[] });
     if (live?.pilots?.length) return live.pilots;
     return profiles.map(({ code, name, level, reputation, value }) => ({ code, name, level, reputation, value }));
+  },
+
+  /** Nhiệm vụ hằng ngày toàn server. `null` khi chưa đăng nhập hoặc server lỗi. */
+  async getDailyMissions(): Promise<DailyMissions | null> {
+    return safe(async () => {
+      const r = await fetch('/api/missions', { cache: 'no-store' });
+      if (r.status === 401) return null;
+      if (!r.ok) throw new Error('missions failed');
+      return (await r.json()) as DailyMissions;
+    }, null);
+  },
+
+  /** Nhận thưởng nhiệm vụ. Trả lại bộ nhiệm vụ đã cập nhật từ server. */
+  async claimDailyMission(id: string): Promise<{ missions?: DailyMissions; reward?: number; error?: string }> {
+    try {
+      const r = await fetch('/api/missions', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ missionId: id }) });
+      const json = (await r.json().catch(() => ({}))) as DailyMissions & { ok?: boolean; reward?: number; error?: string };
+      if (!r.ok) return { error: json.error || 'Nhận thưởng thất bại.' };
+      return { missions: json, reward: json.reward };
+    } catch {
+      return { error: 'Không kết nối được máy chủ.' };
+    }
   },
 
   /** Hồ sơ công khai của một pilot theo mã hãng (`VNAxxxx`). `null` khi không tồn tại. */
