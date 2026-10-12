@@ -68,13 +68,13 @@ function CommunityContent() {
   return <><PageHeading title="Cộng đồng hàng không" subtitle={season?.status === 'live' ? 'Đang online thật: mùa giải, liên minh và chợ theo server.' : 'Mùa giải, liên minh và thị trường người chơi · Đang offline, dùng dữ liệu minh họa.'}/><section className="community-grid">
     <article className="card community-card"><span className="eyebrow">MÙA GIẢI · 30 NGÀY</span><h2>{season?.name ?? 'Đang tải mùa giải'}</h2><p>Còn {season?.daysLeft ?? '—'} ngày · Thưởng top 100: {season?.reward ?? 'đang cập nhật'}</p><b className="coming-soon">{season?.status === 'live' ? 'Đang live · reset theo server' : 'Sắp ra mắt · cần máy chủ'}</b><div className="progress"><i style={{width:'62%'}}/></div><small>Tiến độ mùa minh họa · điểm mùa đặt lại sau mỗi 30 ngày</small><div className="season-ranks">{[['1','VietSky','2.450.000'],['2','Saigon Air','2.120.000'],['3','Cánh Én Việt','1.890.000']].map(([rank,name,points])=><div key={rank}><b>#{rank} {name}</b><span>{points} điểm</span></div>)}</div></article>
     <article className="card community-card"><span className="eyebrow">SỰ KIỆN TOÀN SERVER</span><h2>Tuần lễ vàng</h2><p>Nhu cầu toàn server tăng 20% trong 02 ngày 14 giờ.</p><b className="coming-soon">Tham gia mô phỏng · thưởng 25.000 $</b></article>
-    <article className="card community-card"><span className="eyebrow">LIÊN MINH · TỐI ĐA 10 HÃNG</span><h2>{alliance?.name ?? 'Đang tìm liên minh'}</h2><p>{alliance?.members ?? '—'}/{alliance?.capacity ?? 10} thành viên · Đóng góp: {alliance?.contribution ?? 0} điểm</p><div className="settings-actions"><button className="btn" onClick={()=>window.alert('Luồng tạo/tham gia liên minh đang chạy bằng dữ liệu minh họa.')}>Tạo hoặc tham gia</button><button className="btn secondary" onClick={()=>window.alert('Chọn một máy bay trong đội để góp vào tuyến bay chung (mô phỏng).')}>Góp máy bay mở tuyến chung</button></div><div className="chat-preview">{chat.map(x=><p key={x.id}><b>{x.sender}:</b> {x.message}</p>)}<div className="settings-name"><input className="input" value={message} onChange={e=>setMessage(e.target.value)} placeholder="Nhắn tin liên minh"/><button className="btn" onClick={send}>Gửi</button></div>{chatError && <small style={{color:'#dc2626'}}>{chatError}</small>}</div></article>
+    <article className="card community-card"><span className="eyebrow">LIÊN MINH · TỐI ĐA 10 HÃNG</span><h2>{alliance?.name ?? 'Đang tìm liên minh'}</h2><p>{alliance?.members ?? '—'}/{alliance?.capacity ?? 10} thành viên · Đóng góp: {alliance?.contribution ?? 0} điểm</p><div className="btn-row"><button className="btn" onClick={()=>window.alert('Luồng tạo/tham gia liên minh đang chạy bằng dữ liệu minh họa.')}>Tạo hoặc tham gia</button><button className="btn secondary" onClick={()=>window.alert('Chọn một máy bay trong đội để góp vào tuyến bay chung (mô phỏng).')}>Góp máy bay mở tuyến chung</button></div><div className="chat-preview">{chat.map(x=><p key={x.id}><b>{x.sender}:</b> {x.message}</p>)}<div className="field-row"><input className="input" value={message} onChange={e=>setMessage(e.target.value)} placeholder="Nhắn tin liên minh"/><button className="btn" onClick={send}>Gửi</button></div>{chatError && <small className="negative">{chatError}</small>}</div></article>
     <article className="card community-card"><span className="eyebrow">CHỢ MÁY BAY CŨ & ĐẤU GIÁ SLOT</span><h2>Giao dịch của các hãng</h2><p>Tin rao mẫu từ cộng đồng. Giao dịch máy chủ sẽ mở sau.</p>{market.map(x=><div className="market-row" key={x.id}><span><b>{x.model}</b><small>{x.seller} · hao mòn {x.wear}%</small></span><b>{x.price.toLocaleString('vi-VN')} $</b></div>)}
       {/* Đấu giá slot sân bay — dữ liệu thật từ máy chủ. */}
       <div style={{marginTop:14,borderTop:'1px solid var(--line)',paddingTop:12}}>
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
           <b style={{fontSize:14}}>Đấu giá slot sân bay</b>
-          <button className="btn ghost" onClick={()=>void refreshAuctions()} style={{marginLeft:'auto',padding:'5px 10px',fontSize:11}}>{auctionBusy?'Đang tải…':'Làm mới'}</button>
+          <button className="btn ghost compact" onClick={()=>void refreshAuctions()} style={{marginLeft:'auto'}}>{auctionBusy?'Đang tải…':'Làm mới'}</button>
         </div>
         {auctions.length===0 && <p className="muted" style={{fontSize:12}}>Chưa có phiên nào đang mở. Mở một phiên để người chơi khác đấu giá slot.</p>}
         {auctions.map(a=>(
@@ -86,11 +86,11 @@ function CommunityContent() {
             <button className="btn secondary" disabled={auctionBusy} onClick={()=>void doBid(a)}>Đặt giá</button>
           </div>
         ))}
-        <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
+        <div className="field-row" style={{marginTop:10,flexWrap:'wrap'}}>
           <input className="input" placeholder="Sân bay, ví dụ DAD" value={newAirport} onChange={e=>setNewAirport(e.target.value)} style={{maxWidth:140}}/>
           <button className="btn secondary" disabled={auctionBusy} onClick={()=>void doOpen()}>Mở phiên 2 slot</button>
         </div>
-        {auctionError && <small style={{color:'#dc2626',display:'block',marginTop:8}}>{auctionError}</small>}
+        {auctionError && <small className="negative" style={{display:'block',marginTop:8}}>{auctionError}</small>}
       </div>
       <button className="btn secondary" style={{marginTop:10}} onClick={()=>window.alert('Đăng bán máy bay: chọn máy bay và giá rào.')}>Đăng bán máy bay</button></article>
   </section></>;

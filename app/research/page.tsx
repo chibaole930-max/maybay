@@ -73,36 +73,24 @@ function ResearchContent() {
         title="Viện Nghiên cứu & Công nghệ Hàng không"
         subtitle="Đầu tư điểm nghiên cứu tích lũy từ lợi nhuận để nhận các hiệu ứng cộng dồn vĩnh viễn."
         action={
-          <div
-            className="card"
-            style={{
-              padding: '8px 18px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontWeight: 800,
-              color: '#0a58ca',
-            }}
-          >
+          <div className="points-pill">
             <FlaskConical size={18} />
-            <span>{researchPoints} Điểm nghiên cứu khả dụng</span>
+            <span><b>{researchPoints}</b> Điểm nghiên cứu khả dụng</span>
           </div>
         }
       />
 
       {/* Guide Banner */}
       <div
-        className="card"
+        className="card sub-card"
         style={{
-          background: 'var(--bg)',
-          padding: '16px 20px',
           marginBottom: 24,
           display: 'flex',
           alignItems: 'center',
           gap: 12,
         }}
       >
-        <Sparkles color="#ffb800" size={24} style={{ flexShrink: 0 }} />
+        <Sparkles color="var(--accent)" size={24} style={{ flexShrink: 0 }} />
         <div style={{ fontSize: 13, lineHeight: 1.6 }}>
           <b>Cách tích lũy Điểm nghiên cứu:</b> Cứ mỗi <b>1.000.000 $</b> lợi nhuận ròng thu về từ
           các đường bay, hãng sẽ được cấp <b>1 Điểm nghiên cứu</b>. Hoàn thành nhiệm vụ đặc biệt
@@ -121,30 +109,21 @@ function ResearchContent() {
           const canUpgrade = !isMax && researchPoints >= cost;
 
           return (
-            <div className="card" key={b.id} style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="card plane-card" key={b.id}>
               {/* Branch Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <div
+                  className="tile-ic"
                   style={{
                     width: 46,
                     height: 46,
-                    borderRadius: 14,
-                    display: 'grid',
-                    placeItems: 'center',
-                    background: `${b.color}15`,
+                    background: `color-mix(in srgb, ${b.color} 10%, transparent)`,
                     color: b.color,
                   }}
                 >
                   <Icon size={24} />
                 </div>
-                <span
-                  className="badge"
-                  style={{
-                    background: isMax ? '#12a67822' : '#0a58ca15',
-                    color: isMax ? '#12a678' : '#0a58ca',
-                    fontSize: 12,
-                  }}
-                >
+                <span className={`badge ${isMax ? '' : 'info'}`}>
                   {isMax ? 'Đạt cấp tối đa' : `Cấp ${currentLevel} / 5`}
                 </span>
               </div>
@@ -171,20 +150,7 @@ function ResearchContent() {
                   return (
                     <div
                       key={idx}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '6px 10px',
-                        borderRadius: 8,
-                        background: isUnlocked
-                          ? 'rgba(18, 166, 120, 0.08)'
-                          : isNext
-                          ? 'rgba(10, 88, 202, 0.06)'
-                          : 'transparent',
-                        color: isUnlocked ? '#12a678' : isNext ? '#0a58ca' : 'var(--muted)',
-                        fontWeight: isUnlocked || isNext ? 600 : 400,
-                      }}
+                      className={`lvl-row ${isUnlocked ? 'done' : isNext ? 'next' : ''}`}
                     >
                       <span>{isUnlocked ? '✓' : `${idx + 1}.`}</span>
                       <span>{lvlText}</span>
@@ -196,8 +162,8 @@ function ResearchContent() {
               {/* Upgrade Button */}
               <div style={{ marginTop: 'auto' }}>
                 <button
-                  className="btn"
-                  style={{ width: '100%', background: isMax ? '#12a678' : undefined }}
+                  className={`btn ${isMax ? 'success' : ''}`}
+                  style={{ width: '100%' }}
                   disabled={isMax || !canUpgrade}
                   onClick={() => upgradeTech(b.id)}
                 >

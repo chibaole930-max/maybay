@@ -198,12 +198,15 @@ Ordered; each task is one commit (`type(scope): description`).
     screenshots sent to Telegram, committed + pushed per standing instruction;
     eye-review feedback will be applied as follow-up.
 
-- [ ] **Task 7: Research + Staff + Community + Settings**
+- [x] **Task 7: Research + Staff + Community + Settings**
   - Files: `app/research/page.tsx`, `app/staff/page.tsx`, `app/community/page.tsx`,
     `app/settings/page.tsx`, `app/v5.css`, legacy blocks
   - Depends on: Task 6
   - Verify: `npm run build`; screenshots incl. toggles/switch states → user
     eye-review; AC1, AC4.
+  - Status 2026-10-12: implemented, verified programmatically (see evidence),
+    screenshots sent to Telegram, committed + pushed per standing instruction;
+    eye-review feedback will be applied as follow-up.
 
 - [ ] **Task 8: Tutorial + Login + Onboarding + Landing**
   - Files: `app/tutorial/page.tsx`, `app/login/page.tsx`, `app/onboarding/page.tsx`,
@@ -371,6 +374,28 @@ Ordered; each task is one commit (`type(scope): description`).
   leaderboard + profile modal + friends + dark — 15/15 correct, overflow 0.
   Sweep /finance+/missions+/leaderboard @390/1280 × light/dark: 0.
   Screenshots: `/tmp/opencode/review/t6/`.
+
+### Task 7 (2026-10-12, committed + pushed per standing instruction)
+
+- `npx tsc --noEmit` → clean. `npm run build` → success (isolated full-tree copy).
+- v5 §15: `.points-pill`, `.lvl-row` (+done/next), `.hire-row`, `.swatch`,
+  `.logo-btn`, `.settings-toggle` (+icon/copy), `.switch` (green on-state),
+  `.control-row`, `.danger-zone`, `.reset-step`, community grid/cards/ranks/
+  market/chat, `.badge.info`. Community logic untouched (other agent's area).
+- TSX: tabs/filters → `.chip`; level/skill/morale/progress colors → tokens;
+  claim/upgrade/hire/copy/refresh buttons → `.success`/`.compact`; mission,
+  staff, airport, profile, loan rows → `.kv`/`.mission-*`; settings rows →
+  `.control-row`/`.field-row`/`.swatch`/`.logo-btn`/`.reset-step`/`.danger-zone`;
+  reset-step buttons wrap on mobile.
+- Legacy deletion: 19 rules v2-extra (settings + dead scaffolding), 13 rules v3
+  (community) — then `v3.css` (whitespace-only) and `v2-extra.css` (only dead
+  `routeDash` + not-yet-moved `.coach-inline-top` remained) were both retired:
+  files deleted, imports dropped. Only `globals.css`, `v2.css`, `v2-pages.css`
+  and `v5.css` remain imported.
+- Captures @390px: research, staff + hire modal, community, settings + reset
+  step 2, all ×light/dark — 10/10 correct, overflow 0. Sweep 4 pages @390/1280
+  × light/dark: 0. Shortage warn-card state not separately shot (same pattern
+  as verified warn/danger cards). Screenshots: `/tmp/opencode/review/t7/`.
 
 ## Handoff
 

@@ -139,7 +139,7 @@ function SettingsContent() {
         <div className="card">
           <h2 className="section-title">Nhận diện Thương hiệu</h2>
           <label className="label">Tên hãng hàng không (3 - 24 ký tự)</label>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+          <div className="field-row" style={{ marginBottom: 18 }}>
             <input
               className="input"
               maxLength={24}
@@ -162,14 +162,9 @@ function SettingsContent() {
                 key={c}
                 type="button"
                 onClick={() => setSelectedColor(c)}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: c,
-                  border: selectedColor === c ? '3px solid #0b1f3a' : '2px solid transparent',
-                  transform: selectedColor === c ? 'scale(1.1)' : 'scale(1)',
-                }}
+                className={`swatch ${selectedColor === c ? 'selected' : ''}`}
+                style={{ background: c }}
+                aria-label={`Màu ${c}`}
               />
             ))}
           </div>
@@ -181,13 +176,7 @@ function SettingsContent() {
                 key={i}
                 type="button"
                 onClick={() => setSelectedIcon(i)}
-                className="btn ghost"
-                style={{
-                  fontSize: 20,
-                  padding: 8,
-                  minWidth: 46,
-                  borderColor: selectedIcon === i ? '#0a58ca' : undefined,
-                }}
+                className={`logo-btn ${selectedIcon === i ? 'selected' : ''}`}
               >
                 {i}
               </button>
@@ -199,7 +188,7 @@ function SettingsContent() {
         <div className="card">
           <h2 className="section-title">Tùy chọn Khai thác & Âm thanh</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div className="settings-toggle" style={{ padding: '12px 14px', borderRadius: 14, background: 'var(--bg)' }}>
+            <div className="settings-toggle">
               <span className="settings-toggle-icon"><Sparkles size={18} /></span>
               <div className="settings-toggle-copy">
                 <b>Chế độ đơn giản</b>
@@ -214,27 +203,18 @@ function SettingsContent() {
                 onClick={() => update((s) => ({ ...s, simpleMode: !(s.simpleMode ?? true) }))}
               ><i /></button>
             </div>
-            <div className="settings-toggle" style={{ padding: '12px 14px', borderRadius: 14, background: 'var(--bg)' }}>
+            <div className="settings-toggle">
               <span className="settings-toggle-icon"><AlertTriangle size={18} /></span>
-              <div className="settings-toggle-copy"><b>Chế độ Hardcore</b><small>Sự kiện dày gấp đôi, phá sản sau 3 ngày âm tiền, offline tối đa 4 giờ và nhận XP gấp 1,5 lần. Có huy hiệu đặc biệt.</small>{loan > 0 && <small style={{ color: '#dc2626' }}>Trả hết khoản vay để đổi chế độ.</small>}</div>
+              <div className="settings-toggle-copy"><b>Chế độ Hardcore</b><small>Sự kiện dày gấp đôi, phá sản sau 3 ngày âm tiền, offline tối đa 4 giờ và nhận XP gấp 1,5 lần. Có huy hiệu đặc biệt.</small>{loan > 0 && <small style={{ color: 'var(--danger)' }}>Trả hết khoản vay để đổi chế độ.</small>}</div>
               <button type="button" role="switch" aria-label="Chế độ Hardcore" aria-checked={!!hardcore} disabled={loan > 0} className={`switch ${hardcore ? 'on' : ''}`} onClick={toggleHardcore}><i /></button>
             </div>
             {/* Auto-Manager AI (Level 15 unlock) */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px 14px',
-                borderRadius: 14,
-                background: 'var(--bg)',
-              }}
-            >
+            <div className="control-row">
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Bot size={18} color="#0a58ca" />
+                  <Bot size={18} color="var(--blue)" />
                   <b style={{ fontSize: 14 }}>Chế độ Tự động quản lý (Auto-Manager AI)</b>
-                  <span className="badge" style={{ fontSize: 10 }}>
+                  <span className="badge info" style={{ fontSize: 10 }}>
                     Mở ở Cấp 15
                   </span>
                 </div>
@@ -244,10 +224,9 @@ function SettingsContent() {
               </div>
 
               <button
-                className={`btn ${airline?.autoManage ? '' : 'secondary'}`}
+                className={`btn compact ${airline?.autoManage ? '' : 'secondary'}`}
                 disabled={(airline?.level || 1) < 15}
                 onClick={toggleAutoManage}
-                style={{ padding: '8px 16px', fontSize: 12 }}
               >
                 {(airline?.level || 1) < 15
                   ? 'Chưa mở khóa'
@@ -258,16 +237,7 @@ function SettingsContent() {
             </div>
 
             {/* Sound Toggle */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px 14px',
-                borderRadius: 14,
-                background: 'var(--bg)',
-              }}
-            >
+            <div className="control-row">
               <div>
                 <b style={{ fontSize: 14 }}>Hiệu ứng Âm thanh (Web Audio Synthesizer)</b>
                 <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
@@ -276,9 +246,8 @@ function SettingsContent() {
               </div>
 
               <button
-                className={`btn ${soundEnabled ? '' : 'ghost'}`}
+                className={`btn compact ${soundEnabled ? '' : 'ghost'}`}
                 onClick={toggleSound}
-                style={{ padding: '8px 16px', fontSize: 12 }}
               >
                 {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
                 <span>{soundEnabled ? 'Đang bật' : 'Đang tắt'}</span>
@@ -286,16 +255,7 @@ function SettingsContent() {
             </div>
 
             {/* Currency toggle */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px 14px',
-                borderRadius: 14,
-                background: 'var(--bg)',
-              }}
-            >
+            <div className="control-row">
               <div>
                 <b style={{ fontSize: 14 }}>Đơn vị Tiền tệ hiển thị</b>
                 <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
@@ -304,25 +264,15 @@ function SettingsContent() {
               </div>
 
               <button
-                className="btn secondary"
+                className="btn secondary compact"
                 onClick={() => setCurrency(currency === 'USD' ? 'VND' : 'USD')}
-                style={{ padding: '8px 16px', fontSize: 12 }}
               >
                 <Coins size={16} /> Đang chọn: {currency}
               </button>
             </div>
 
             {/* Theme Toggle */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px 14px',
-                borderRadius: 14,
-                background: 'var(--bg)',
-              }}
-            >
+            <div className="control-row">
               <div>
                 <b style={{ fontSize: 14 }}>Giao diện Sáng / Tối</b>
                 <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
@@ -332,16 +282,14 @@ function SettingsContent() {
 
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
-                  className={`btn ${theme === 'light' ? '' : 'ghost'}`}
+                  className={`btn compact ${theme === 'light' ? '' : 'ghost'}`}
                   onClick={() => setTheme('light')}
-                  style={{ padding: '8px 12px', fontSize: 12 }}
                 >
                   <Sun size={15} /> Sáng
                 </button>
                 <button
-                  className={`btn ${theme === 'dark' ? '' : 'ghost'}`}
+                  className={`btn compact ${theme === 'dark' ? '' : 'ghost'}`}
                   onClick={() => setTheme('dark')}
-                  style={{ padding: '8px 12px', fontSize: 12 }}
                 >
                   <Moon size={15} /> Tối
                 </button>
@@ -382,8 +330,8 @@ function SettingsContent() {
         </div>
 
         {/* DANGER ZONE: RESET GAME */}
-        <div className="card" style={{ borderColor: 'rgba(232, 75, 60, 0.3)' }}>
-          <h2 className="section-title" style={{ color: '#e84b3c' }}>
+        <div className="card danger-zone">
+          <h2 className="section-title">
             <Trash2 size={20} style={{ verticalAlign: 'middle', marginRight: 6 }} />
             Xóa dữ liệu & Đặt lại Trò chơi
           </h2>
@@ -403,22 +351,14 @@ function SettingsContent() {
           )}
 
           {resetConfirmStep === 1 && (
-            <div
-              style={{
-                marginTop: 14,
-                padding: 16,
-                background: '#fef2f2',
-                borderRadius: 14,
-                border: '1px solid #fecaca',
-              }}
-            >
-              <b style={{ color: '#991b1b', fontSize: 14 }}>
+            <div className="reset-step">
+              <b>
                 Bước 1: Bạn có thực sự muốn xóa toàn bộ tiến trình không?
               </b>
-              <p style={{ color: '#b91c1c', fontSize: 12, margin: '6px 0 14px' }}>
+              <p style={{ margin: '0 0 14px' }}>
                 Mọi máy bay, đường bay và số dư tiền mặt sẽ biến mất vĩnh viễn.
               </p>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button className="btn danger" onClick={() => setResetConfirmStep(2)}>
                   Tôi chắc chắn, tiếp tục bước 2
                 </button>
@@ -430,16 +370,8 @@ function SettingsContent() {
           )}
 
           {resetConfirmStep === 2 && (
-            <div
-              style={{
-                marginTop: 14,
-                padding: 16,
-                background: '#fff1f2',
-                borderRadius: 14,
-                border: '2px solid #e11d48',
-              }}
-            >
-              <b style={{ color: '#881337', fontSize: 14 }}>
+            <div className="reset-step severe">
+              <b>
                 Bước 2: Chọn lại độ khó cho lần chơi mới và xác nhận xóa
               </b>
               <div style={{ margin: '12px 0' }}>

@@ -69,22 +69,13 @@ function StaffContent() {
 
       {/* Staff Shortage Warning Banner */}
       {isStaffShortage && (
-        <div
-          className="card"
-          style={{
-            background: '#fffbeb',
-            borderColor: '#fde68a',
-            padding: 18,
-            marginBottom: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <AlertTriangle color="#d97706" size={24} />
+        <div className="card warn-card">
           <div>
-            <b style={{ color: '#92400e', fontSize: 14 }}>Thiếu hụt nhân lực vận hành!</b>
-            <div style={{ color: '#b45309', fontSize: 12, marginTop: 2 }}>
+            <AlertTriangle color="var(--accent-ink)" size={24} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <b style={{ fontSize: 14 }}>Thiếu hụt nhân lực vận hành!</b>
+            <div style={{ fontSize: 12, marginTop: 2 }}>
               Đội bay của bạn cần tối thiểu {requiredPilots} Phi công, {requiredAttendants} Tiếp viên và {requiredEngineers} Kỹ sư.
               Thiếu nhân sự làm giảm hiệu suất khai thác đường bay.
             </div>
@@ -129,13 +120,12 @@ function StaffContent() {
       </div>
 
       {/* Staff Filter Tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {(['all', 'Phi công', 'Tiếp viên', 'Kỹ sư'] as const).map((r) => (
           <button
             key={r}
             onClick={() => setRoleFilter(r)}
-            className={`btn ${roleFilter === r ? '' : 'ghost'}`}
-            style={{ padding: '6px 14px', minHeight: 36, fontSize: 12 }}
+            className={`chip ${roleFilter === r ? 'active' : ''}`}
           >
             {r === 'all' ? 'Tất cả nhân sự' : r}
           </button>
@@ -149,13 +139,13 @@ function StaffContent() {
           const canTrain = (airline?.cash || 0) >= trainCost && member.skill < 5;
 
           return (
-            <div className="card" key={member.id} style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="card plane-card" key={member.id}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <div>
                   <b style={{ fontSize: 16 }}>{member.name}</b>
                   <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{member.role}</div>
                 </div>
-                <span className="badge" style={{ color: '#ffb800' }}>
+                <span className="badge warn">
                   {'★'.repeat(member.skill)}{'☆'.repeat(5 - member.skill)}
                 </span>
               </div>
@@ -174,12 +164,12 @@ function StaffContent() {
                 <div>
                   <span className="muted">Mức lương</span>
                   <br />
-                  <b>{formatCurrency(member.salaryPerHour, currency)}/giờ</b>
+                  <b className="tabular-nums">{formatCurrency(member.salaryPerHour, currency)}/giờ</b>
                 </div>
-                <div>
+                <div style={{ textAlign: 'right' }}>
                   <span className="muted">Chỉ số hài lòng</span>
                   <br />
-                  <b style={{ color: member.morale >= 80 ? '#12a678' : '#e84b3c' }}>
+                  <b className={member.morale >= 80 ? 'positive' : 'negative'}>
                     {member.morale}%
                   </b>
                 </div>
@@ -187,18 +177,19 @@ function StaffContent() {
 
               <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
                 <button
-                  className="btn secondary"
-                  style={{ flex: 1, padding: '8px 10px', fontSize: 12 }}
+                  className="btn secondary compact"
+                  style={{ flex: 1 }}
                   disabled={!canTrain}
                   onClick={() => train(member.id)}
                 >
                   {member.skill >= 5 ? '★ Tối đa' : `Đào tạo (${formatCurrency(trainCost, currency)})`}
                 </button>
                 <button
-                  className="btn ghost"
-                  style={{ padding: '8px 10px', fontSize: 12, color: '#e84b3c' }}
+                  className="btn ghost compact"
+                  style={{ color: 'var(--danger)' }}
                   onClick={() => fire(member.id)}
                   title="Sa thải nhân sự"
+                  aria-label={`Sa thải ${member.name}`}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -211,15 +202,7 @@ function StaffContent() {
       {/* MODAL: HIRE STAFF */}
       {hireModalOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.65)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => setHireModalOpen(false)}
         >
           <div
@@ -234,17 +217,7 @@ function StaffContent() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 380, overflowY: 'auto' }}>
               {initialStaffCandidates.map((candidate) => (
-                <div
-                  key={candidate.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 14px',
-                    borderRadius: 12,
-                    border: '1px solid var(--line)',
-                  }}
-                >
+                <div key={candidate.id} className="hire-row">
                   <div>
                     <b>{candidate.name}</b>
                     <div className="muted" style={{ fontSize: 12 }}>
@@ -252,12 +225,11 @@ function StaffContent() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ textAlign: 'right', fontSize: 12 }}>
+                    <div className="tabular-nums" style={{ textAlign: 'right', fontSize: 12 }}>
                       <b>{formatCurrency(candidate.salaryPerHour, currency)}/giờ</b>
                     </div>
                     <button
-                      className="btn"
-                      style={{ padding: '6px 12px', minHeight: 34, fontSize: 12 }}
+                      className="btn compact"
                       onClick={() => {
                         hire(candidate);
                         setHireModalOpen(false);
