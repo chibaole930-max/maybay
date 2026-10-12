@@ -156,13 +156,16 @@ Ordered; each task is one commit (`type(scope): description`).
     screenshots sent to Telegram, committed + pushed per standing instruction;
     eye-review feedback will be applied as follow-up.
 
-- [ ] **Task 3: Dashboard**
+- [x] **Task 3: Dashboard**
   - Files: `app/dashboard/page.tsx`, `app/v5.css`, legacy blocks in `v2.css`/`v4.css`
   - Depends on: Task 2
   - Build: re-compose for mobile (dominant value read → operating tiles → chart →
     mission), retire `cockpit-grid`, `journey-card`, `live-*` legacy rules.
   - Verify: `npm run build`; screenshots 390×844 / 1280×800, light + dark → user
     eye-review; AC1, AC4.
+  - Status 2026-10-12: implemented, verified programmatically (see evidence),
+    screenshots sent to Telegram, committed + pushed per standing instruction;
+    eye-review feedback will be applied as follow-up.
 
 - [ ] **Task 4: Fleet + Routes**
   - Files: `app/fleet/page.tsx`, `app/routes/page.tsx`, `app/v5.css`, legacy blocks
@@ -265,6 +268,29 @@ Ordered; each task is one commit (`type(scope): description`).
 - Tap targets @390px: bottom-nav 127×50, buttons 45–48h, input 45h, icon-btn
   40×44, time-speed 38×36 (AC3 amended with header-cluster exception).
 - Screenshots sent to Telegram; eye-review feedback will be applied as follow-up.
+
+### Task 3 (2026-10-12, committed + pushed per standing instruction)
+
+- `npx tsc --noEmit` → clean. `npm run build` → success (isolated full-tree copy).
+- TSX micro-edits in `app/dashboard/page.tsx` only: hardcoded hexes → CSS vars /
+  `.positive` / `.negative` (profit figure, mission reward, route arrow, table
+  profit, earning bar); WeeklyStrip claim button upgraded to `.compact` (36px).
+  Chart ink left as hex (SVG presentation attributes can't use `var()`).
+- v5 §11: `.stat-grid` responsive (2-col mobile — fixes a regression where T2's
+  removal of the v2-extra rule left 4 squeezed columns), full `live-*`,
+  `arrival-*`, `route-earning-*`, `activity-*`, `milestone-*`, journey, rec,
+  startup, crisis, coach and celebration skins. Readability floor raised
+  (9px → 11–12px body text); dark variants via tokens. Recharts grid children
+  get `min-width: 0` against blowout.
+- Legacy deletion: 60 rules from `v2.css` (9.1→4.8KB), 4 from `v2-extra.css`,
+  6 from `v3.css`, 74 from `v4.css` (15.0→9.1KB), incl. T2 leftovers caught by
+  spacing mismatches, dead `@keyframes pop`, and the two `.dark .live-*` rules.
+  Residual owned-base grep: 0.
+- Overflow sweep `/dashboard` + `/settings` @390/1280 × light/dark: all 0px.
+- State matrix @390px: teaser, bell popover (×light/dark), level-up, offline,
+  milestone, IPO, situation, event banner, empty startup, reputation crisis,
+  coach overlay, populated `lived` dashboard @390 + @1280 — all isolated kinds,
+  all overflow 0. Screenshots: `/tmp/opencode/review/t3/` + `t3shell/`.
 
 ## Handoff
 

@@ -92,7 +92,7 @@ function WeeklyStrip() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><b>{q.title}</b><span className="muted">{Math.floor(q.progress).toLocaleString('vi-VN')}/{q.target.toLocaleString('vi-VN')}</span></div>
                 <div className="progress" style={{ height: 6 }}><i style={{ width: `${pct}%` }} /></div>
               </div>
-              <button className="btn secondary" disabled={!q.done || q.reward <= 0} onClick={() => claimMission(q.id)} style={{ fontSize: 12, padding: '6px 12px' }}>{q.reward <= 0 ? 'Đã nhận' : q.done ? `Nhận ${formatCurrency(q.reward, currency)}` : `${pct}%`}</button>
+              <button className="btn secondary compact" disabled={!q.done || q.reward <= 0} onClick={() => claimMission(q.id)}>{q.reward <= 0 ? 'Đã nhận' : q.done ? `Nhận ${formatCurrency(q.reward, currency)}` : `${pct}%`}</button>
             </div>
           );
         })}
@@ -200,7 +200,7 @@ function DashboardContent() {
           <div className="live-ops-chart"><div className="live-panel-title"><div><b>Số dư trong 60 phút qua</b><small>Tiền tăng theo từng lần hạ cánh</small></div><span className="live-dot">TRỰC TIẾP</span></div><div className="live-cash-chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={liveCashChart}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--line)"/><XAxis dataKey="time" minTickGap={46} tick={{fontSize:10,fill:'var(--muted)'}}/><YAxis hide domain={['auto','auto']}/><Tooltip formatter={(value:any)=>[formatCurrency(Number(value),currency),'Số dư']} contentStyle={{background:'var(--surface)',borderColor:'var(--line)',borderRadius:12}}/><Line type="stepAfter" dataKey="cash" stroke="#16a34a" strokeWidth={2.5} dot={false} isAnimationActive={false}/></LineChart></ResponsiveContainer></div></div>
           <div className="live-arrivals"><div className="live-panel-title"><div><b>Sắp nhận</b><small>Doanh thu cộng khi hạ cánh</small></div><Plane size={17}/></div>{liveFlights.length?liveFlights.slice(0,3).map(flight=>{const eta=Math.max(0,Math.ceil((flight.arrivesAt-(game.gameTimeMs||0))/(60000*gameSpeed)));const multiplier=prestigeMultiplier*(1+Math.min(.2,Math.floor(((game.streak||0)+1)/5)*.02));const payout=flight.payout*multiplier;return <div className="arrival-row" key={flight.id}><div><b>{flight.code}</b><span>{flight.from} → {flight.to}</span></div><strong>+{formatCurrency(payout,currency)}</strong><small>hạ cánh sau {eta} giây</small></div>}):<div className="arrival-empty"><span>🛫</span><b>Chưa có chuyến bay trên không</b><small>Mở tuyến đầu tiên để bắt đầu nhận tiền khi máy bay hạ cánh.</small><Link className="btn" href={planes.length?'/routes?create=1&suggest=1':'/fleet?open=catalog'}>{planes.length?'Mở đường bay':'Mua máy bay'}</Link></div>}</div>
         </div>
-        <div className="live-route-earnings"><div className="live-panel-title"><div><b>Hiệu quả từng đường bay</b><small>Lợi nhuận dự tính trung bình mỗi giờ game</small></div><Link href="/routes">Quản lý tuyến <ArrowRight size={14}/></Link></div>{routes.filter(r=>r.active).length?routes.filter(r=>r.active).slice().sort((a,b)=>(b.profitPerHour||0)-(a.profitPerHour||0)).map(route=>{const value=(route.profitPerHour||0)*prestigeMultiplier*streakMultiplier;const max=Math.max(1,...routes.map(r=>Math.abs(r.profitPerHour||0)));return <button className="route-earning-row" key={route.id} onClick={()=>router.push(`/routes?route=${encodeURIComponent(route.id)}`)}><span>{route.from} → {route.to}</span><i><b style={{width:`${Math.max(4,Math.abs(value)/max*100)}%`,background:value>=0?'#16a34a':'#dc2626'}}/></i><strong className={value>=0?'positive':'negative'}>{value>=0?'+':''}{formatCurrency(value,currency)}</strong></button>}):<div className="route-earning-empty">Mở một đường bay để xem tuyến nào đang tạo lợi nhuận.</div>}</div>
+        <div className="live-route-earnings"><div className="live-panel-title"><div><b>Hiệu quả từng đường bay</b><small>Lợi nhuận dự tính trung bình mỗi giờ game</small></div><Link href="/routes">Quản lý tuyến <ArrowRight size={14}/></Link></div>{routes.filter(r=>r.active).length?routes.filter(r=>r.active).slice().sort((a,b)=>(b.profitPerHour||0)-(a.profitPerHour||0)).map(route=>{const value=(route.profitPerHour||0)*prestigeMultiplier*streakMultiplier;const max=Math.max(1,...routes.map(r=>Math.abs(r.profitPerHour||0)));return <button className="route-earning-row" key={route.id} onClick={()=>router.push(`/routes?route=${encodeURIComponent(route.id)}`)}><span>{route.from} → {route.to}</span><i><b style={{width:`${Math.max(4,Math.abs(value)/max*100)}%`,background:value>=0?'var(--success)':'var(--danger)'}}/></i><strong className={value>=0?'positive':'negative'}>{value>=0?'+':''}{formatCurrency(value,currency)}</strong></button>}):<div className="route-earning-empty">Mở một đường bay để xem tuyến nào đang tạo lợi nhuận.</div>}</div>
         <div className="live-activity"><div className="live-panel-title"><div><b><Activity size={16}/> Nhật ký hãng bay</b><small>Cất cánh, hạ cánh và những chuyện không nằm trong giáo trình</small></div><div className="activity-filters">{([ ['all','Tất cả'],['flights','Chuyến bay'],['events','Sự kiện'],['company','Cột mốc'] ] as const).map(([key,label])=><button key={key} className={activityFilter===key?'active':''} onClick={()=>setActivityFilter(key)}>{label}</button>)}</div></div>{activityItems.length?activityItems.slice(0,8).map(item=><div className={`activity-row activity-${item.kind}`} key={item.id}><span className="activity-icon">{item.kind==='landing'?'🛬':item.kind==='takeoff'?'🛫':item.kind==='situation'?'🎭':item.kind==='competitor'?'📉':item.kind==='milestone'?'🏆':item.kind==='ipo'?'📈':'✨'}</span><span>{item.text}</span>{item.amount!==undefined&&<b>{item.amount>=0?'+':''}{formatCurrency(item.amount,currency)}</b>}</div>):<div className="route-earning-empty">Nhật ký sẽ xuất hiện khi đội bay bắt đầu khai thác.</div>}</div>
         <div className="live-milestones"><div className="live-panel-title"><div><b>Những cột mốc kế tiếp</b><small>Tiến độ mở khóa thành tựu của hãng</small></div><Link href="/missions">Xem tất cả</Link></div>{upcomingMilestones.length?upcomingMilestones.map(milestone=><div className="milestone-progress-row" key={milestone.id}><div><b>{milestone.title}</b><small>{milestone.metric==='flights'?`Còn ${milestone.remaining.toLocaleString('vi-VN')} chuyến bay`:milestone.metric==='passengers'?`Còn ${milestone.remaining.toLocaleString('vi-VN')} hành khách`:milestone.metric==='cash'?`Còn ${formatCurrency(milestone.remaining,currency)}`:milestone.metric==='routes'?`Còn ${milestone.remaining} đường bay`:milestone.metric==='planes'?`Còn ${milestone.remaining} máy bay`:`Còn ${milestone.remaining} điểm danh tiếng`}</small></div><div className="milestone-progress"><i style={{width:`${milestone.ratio*100}%`}}/></div><strong>{Math.floor(milestone.ratio*100)}%</strong></div>):<div className="route-earning-empty">Toàn bộ cột mốc đã hoàn thành. Hãng bay huyền thoại!</div>}</div>
       </section>
@@ -237,7 +237,7 @@ function DashboardContent() {
         <StatCard
           title="Lợi nhuận dự kiến"
           value={
-            <span style={{ color: profitPerHour >= 0 ? '#12a678' : '#e84b3c' }}>
+            <span className={profitPerHour >= 0 ? 'positive' : 'negative'}>
               {formatCurrency(profitPerHour, currency)}/giờ
             </span>
           }
@@ -371,7 +371,7 @@ function DashboardContent() {
                         marginTop: 4,
                       }}
                     >
-                      <span style={{ color: '#0a58ca', fontWeight: 700 }}>
+                      <span style={{ color: 'var(--blue)', fontWeight: 700 }}>
                         Thưởng +{formatCurrency(m.reward, currency)}
                       </span>
                       <span className="muted">{percent}%</span>
@@ -450,7 +450,7 @@ function DashboardContent() {
                     <tr key={r.id}>
                       <td>
                         <b style={{ fontSize: 14 }}>
-                          {r.from} <span style={{ color: '#0a58ca' }}>⟷</span> {r.to}
+                          {r.from} <span style={{ color: 'var(--blue)' }}>⟷</span> {r.to}
                         </b>
                       </td>
                       <td>
@@ -471,10 +471,8 @@ function DashboardContent() {
                       </td>
                       <td>
                         <b
-                          style={{
-                            color: (r.profitPerHour || 0) >= 0 ? '#12a678' : '#e84b3c',
-                            fontSize: 14,
-                          }}
+                          className={(r.profitPerHour || 0) >= 0 ? 'positive' : 'negative'}
+                          style={{ fontSize: 14 }}
                         >
                           {(r.profitPerHour || 0) >= 0 ? '+' : ''}
                           {formatCurrency(r.profitPerHour || 0, currency)}
