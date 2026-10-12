@@ -159,8 +159,7 @@ function FleetContent() {
             <button
               key={cat.id}
               onClick={() => setCategoryFilter(cat.id as any)}
-              className={`btn ${categoryFilter === cat.id ? '' : 'ghost'}`}
-              style={{ padding: '8px 14px', minHeight: 38, fontSize: 12 }}
+              className={`chip ${categoryFilter === cat.id ? 'active' : ''}`}
             >
               {cat.label}
             </button>
@@ -171,7 +170,7 @@ function FleetContent() {
       {/* Empty State */}
       {filteredPlanes.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <PlaneTakeoff size={48} color="#0a58ca" style={{ margin: '0 auto 16px' }} />
+          <PlaneTakeoff size={48} color="var(--blue)" style={{ margin: '0 auto 16px' }} />
           <h3 style={{ fontSize: 18, marginBottom: 8 }}>
             {tab === 'hangar' ? 'Nhà chứa hiện tại đang trống' : 'Không tìm thấy dòng máy bay phù hợp'}
           </h3>
@@ -196,31 +195,21 @@ function FleetContent() {
             const canAfford = (airline?.cash || 0) >= plane.price;
 
             return (
-              <div className="card" key={plane.id} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="card plane-card" key={plane.id}>
                 {/* Header card */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 14,
-                      display: 'grid',
-                      placeItems: 'center',
-                      background: '#0a58ca14',
-                      color: '#0a58ca',
-                    }}
-                  >
+                  <div className="tile-ic">
                     <PlaneIcon size={24} />
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <span className="badge">{plane.manufacturer}</span>
                     {plane.businessClass && (
-                      <span className="badge" style={{ background: '#ffb80022', color: '#b45309' }}>
+                      <span className="badge warn">
                         Thương gia +15%
                       </span>
                     )}
                     {plane.winglets && (
-                      <span className="badge" style={{ background: '#12a67822', color: '#12a678' }}>
+                      <span className="badge">
                         Winglets -8% xăng
                       </span>
                     )}
@@ -230,14 +219,15 @@ function FleetContent() {
                 {/* Title & Name */}
                 <div style={{ margin: '14px 0 6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h3 style={{ fontSize: 17, margin: 0, fontWeight: 700 }}>
+                    <h3>
                       {plane.name || plane.model}
                     </h3>
                     {isOwned && (
                       <button
                         onClick={() => handleOpenRename(plane)}
-                        style={{ border: 0, background: 'none', color: 'var(--muted)', cursor: 'pointer', padding: 4 }}
+                        className="text-btn dim"
                         title="Đổi tên máy bay"
+                        aria-label="Đổi tên máy bay"
                       >
                         <Edit2 size={14} />
                       </button>
@@ -249,18 +239,7 @@ function FleetContent() {
                 </div>
 
                 {/* Specifications Grid */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 10,
-                    padding: '12px 0',
-                    margin: '10px 0',
-                    borderTop: '1px solid var(--line)',
-                    borderBottom: '1px solid var(--line)',
-                    fontSize: 12,
-                  }}
-                >
+                <div className="spec-grid">
                   <div>
                     <span className="muted">Tầm bay</span>
                     <br />
@@ -292,7 +271,7 @@ function FleetContent() {
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Gauge size={14} /> Độ hao mòn <span title="Mức sử dụng tích lũy của máy bay. Ví dụ 80% nghĩa là nên đưa máy bay đi bảo trì sớm." className="term-help">?</span>
                         </span>
-                        <b style={{ color: plane.wear >= 80 ? '#e84b3c' : plane.wear >= 50 ? '#ffb800' : 'inherit' }}>
+                        <b style={{ color: plane.wear >= 80 ? 'var(--danger)' : plane.wear >= 50 ? 'var(--accent-ink)' : 'inherit' }}>
                           {plane.wear.toFixed(1)}% {plane.wear >= 80 ? '(Nguy cấp!)' : ''}
                         </b>
                       </div>
@@ -300,7 +279,7 @@ function FleetContent() {
                         <i
                           style={{
                             width: `${Math.min(100, plane.wear)}%`,
-                            background: plane.wear >= 80 ? '#e84b3c' : plane.wear >= 50 ? '#ffb800' : '#0a58ca',
+                            background: plane.wear >= 80 ? 'var(--danger)' : plane.wear >= 50 ? 'var(--accent)' : 'var(--blue)',
                           }}
                         />
                       </div>
@@ -309,17 +288,15 @@ function FleetContent() {
                     {/* Action buttons */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 8 }}>
                       <button
-                        className="btn secondary"
+                        className="btn secondary compact"
                         disabled={plane.wear < 0.5}
                         onClick={() => maintain(plane.id)}
-                        style={{ padding: '8px 10px', fontSize: 12 }}
                       >
                         <Wrench size={14} /> Bảo trì ({formatCurrency(maintCost, currency)})
                       </button>
                       <button
-                        className="btn ghost"
+                        className="btn ghost compact"
                         onClick={() => setSelectedPlaneForUpgrade(plane)}
-                        style={{ padding: '8px 10px', fontSize: 12 }}
                       >
                         <Zap size={14} /> Nâng cấp
                       </button>
@@ -328,28 +305,14 @@ function FleetContent() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 4 }}>
                       <button
                         onClick={() => setSelectedPlaneForDetails(plane)}
-                        style={{
-                          border: 0,
-                          background: 'none',
-                          color: '#0a58ca',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
+                        className="text-btn"
                       >
                         Chi tiết thông số ↗
                       </button>
 
                       <button
                         onClick={() => setSelectedPlaneForSell(plane)}
-                        style={{
-                          border: 0,
-                          background: 'none',
-                          color: '#e84b3c',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
+                        className="text-btn danger"
                       >
                         Bán ({formatCurrency(resaleVal, currency)})
                       </button>
@@ -367,7 +330,7 @@ function FleetContent() {
                       }}
                     >
                       <span className="muted" style={{ fontSize: 12 }}>Giá niêm yết:</span>
-                      <b style={{ fontSize: 20, color: '#0a58ca' }}>
+                      <b className="tabular-nums" style={{ fontSize: 20, color: 'var(--blue)' }}>
                         {formatCurrency(plane.price, currency)}
                       </b>
                     </div>
@@ -397,15 +360,7 @@ function FleetContent() {
       {/* MODAL: Plane Details */}
       {selectedPlaneForDetails && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => setSelectedPlaneForDetails(null)}
         >
           <div
@@ -418,38 +373,38 @@ function FleetContent() {
                 <h3 style={{ margin: 0, fontSize: 18 }}>{selectedPlaneForDetails.name || selectedPlaneForDetails.model}</h3>
                 <div className="muted" style={{ fontSize: 12 }}>{selectedPlaneForDetails.manufacturer} · Năm {selectedPlaneForDetails.year}</div>
               </div>
-              <button className="btn ghost" onClick={() => setSelectedPlaneForDetails(null)} style={{ padding: 6, minHeight: 32 }}>
+              <button className="btn ghost icon-btn" onClick={() => setSelectedPlaneForDetails(null)} aria-label="Đóng">
                 <X size={16} />
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                <span className="muted">Sức chứa hành khách</span>
+            <div style={{ fontSize: 13 }}>
+              <div className="kv">
+                <span>Sức chứa hành khách</span>
                 <b>{selectedPlaneForDetails.capacity} ghế</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                <span className="muted">Tầm bay tối đa</span>
+              <div className="kv">
+                <span>Tầm bay tối đa</span>
                 <b>{selectedPlaneForDetails.rangeKm.toLocaleString('vi-VN')} km</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                <span className="muted">Vận tốc hành trình</span>
+              <div className="kv">
+                <span>Vận tốc hành trình</span>
                 <b>{selectedPlaneForDetails.speedKmh} km/h</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                <span className="muted">Chi phí nhiên liệu</span>
+              <div className="kv">
+                <span>Chi phí nhiên liệu</span>
                 <b>{formatCurrency(selectedPlaneForDetails.fuelCostPerHour, currency)}/giờ</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                <span className="muted">Tổng giờ bay tích lũy</span>
+              <div className="kv">
+                <span>Tổng giờ bay tích lũy</span>
                 <b>{(selectedPlaneForDetails.totalFlightHours || 0).toFixed(1)} giờ</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                <span className="muted">Ghế Hạng Thương Gia</span>
+              <div className="kv">
+                <span>Ghế Hạng Thương Gia</span>
                 <b>{selectedPlaneForDetails.businessClass ? '✅ Đã lắp (+15% doanh thu)' : 'Chưa nâng cấp'}</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-                <span className="muted">Cánh phụ Winglets</span>
+              <div className="kv">
+                <span>Cánh phụ Winglets</span>
                 <b>{selectedPlaneForDetails.winglets ? '✅ Đã gắn (-8% chi phí xăng)' : 'Chưa nâng cấp'}</b>
               </div>
             </div>
@@ -464,15 +419,7 @@ function FleetContent() {
       {/* MODAL: Upgrades */}
       {selectedPlaneForUpgrade && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => setSelectedPlaneForUpgrade(null)}
         >
           <div
@@ -485,14 +432,14 @@ function FleetContent() {
                 <h3 style={{ margin: 0, fontSize: 18 }}>Nâng cấp khí động & tiện nghi</h3>
                 <div className="muted" style={{ fontSize: 12 }}>Tối ưu hóa lợi nhuận cho {selectedPlaneForUpgrade.name}</div>
               </div>
-              <button className="btn ghost" onClick={() => setSelectedPlaneForUpgrade(null)} style={{ padding: 6, minHeight: 32 }}>
+              <button className="btn ghost icon-btn" onClick={() => setSelectedPlaneForUpgrade(null)} aria-label="Đóng">
                 <X size={16} />
               </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Business class upgrade card */}
-              <div className="card" style={{ background: 'var(--bg)', padding: 16 }}>
+              <div className="sub-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                   <div>
                     <b>🛋️ Cải tạo Khoang Thương gia</b>
@@ -501,7 +448,7 @@ function FleetContent() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 800, color: '#0a58ca' }}>
+                    <div className="tabular-nums" style={{ fontWeight: 800, color: 'var(--blue)' }}>
                       {formatCurrency(Math.round(selectedPlaneForUpgrade.price * 0.05), currency)}
                     </div>
                   </div>
@@ -511,8 +458,7 @@ function FleetContent() {
                     <span className="badge">Đã hoàn thành</span>
                   ) : (
                     <button
-                      className="btn"
-                      style={{ fontSize: 12, padding: '7px 14px', minHeight: 36 }}
+                      className="btn compact"
                       disabled={(airline?.cash || 0) < selectedPlaneForUpgrade.price * 0.05}
                       onClick={() => {
                         upgrade(selectedPlaneForUpgrade.id, 'businessClass');
@@ -526,7 +472,7 @@ function FleetContent() {
               </div>
 
               {/* Winglets upgrade card */}
-              <div className="card" style={{ background: 'var(--bg)', padding: 16 }}>
+              <div className="sub-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                   <div>
                     <b>🪽 Cánh phụ Sharklets / Winglets</b>
@@ -535,7 +481,7 @@ function FleetContent() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 800, color: '#0a58ca' }}>
+                    <div className="tabular-nums" style={{ fontWeight: 800, color: 'var(--blue)' }}>
                       {formatCurrency(Math.round(selectedPlaneForUpgrade.price * 0.035), currency)}
                     </div>
                   </div>
@@ -545,8 +491,7 @@ function FleetContent() {
                     <span className="badge">Đã hoàn thành</span>
                   ) : (
                     <button
-                      className="btn"
-                      style={{ fontSize: 12, padding: '7px 14px', minHeight: 36 }}
+                      className="btn compact"
                       disabled={(airline?.cash || 0) < selectedPlaneForUpgrade.price * 0.035}
                       onClick={() => {
                         upgrade(selectedPlaneForUpgrade.id, 'winglets');
@@ -566,15 +511,7 @@ function FleetContent() {
       {/* MODAL: Rename */}
       {selectedPlaneForRename && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => setSelectedPlaneForRename(null)}
         >
           <div
@@ -606,15 +543,7 @@ function FleetContent() {
       {/* MODAL: Confirm Sell */}
       {selectedPlaneForSell && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => setSelectedPlaneForSell(null)}
         >
           <div
@@ -622,25 +551,14 @@ function FleetContent() {
             style={{ width: 'min(100%, 440px)', padding: 24 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: '0 0 10px', fontSize: 18, color: '#e84b3c' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 18, color: 'var(--danger)' }}>
               Xác nhận thanh lý máy bay
             </h3>
             <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
               Bạn có chắc chắn muốn bán <b>{selectedPlaneForSell.name || selectedPlaneForSell.model}</b>?
               Giá trị thu hồi sau khấu hao ({selectedPlaneForSell.wear.toFixed(1)}% hao mòn):
             </p>
-            <div
-              style={{
-                background: 'var(--bg)',
-                padding: 14,
-                borderRadius: 12,
-                fontSize: 20,
-                fontWeight: 800,
-                color: '#12a678',
-                textAlign: 'center',
-                margin: '14px 0',
-              }}
-            >
+            <div className="sell-value">
               +{formatCurrency(getPlaneResaleValue(selectedPlaneForSell), currency)}
             </div>
             <div className="muted" style={{ fontSize: 11, marginBottom: 18 }}>

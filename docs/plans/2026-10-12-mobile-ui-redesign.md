@@ -167,11 +167,14 @@ Ordered; each task is one commit (`type(scope): description`).
     screenshots sent to Telegram, committed + pushed per standing instruction;
     eye-review feedback will be applied as follow-up.
 
-- [ ] **Task 4: Fleet + Routes**
+- [x] **Task 4: Fleet + Routes**
   - Files: `app/fleet/page.tsx`, `app/routes/page.tsx`, `app/v5.css`, legacy blocks
   - Depends on: Task 3
   - Verify: `npm run build`; screenshots of each page incl. empty state → user
     eye-review; AC1, AC4.
+  - Status 2026-10-12: implemented, verified programmatically (see evidence),
+    screenshots sent to Telegram, committed + pushed per standing instruction;
+    eye-review feedback will be applied as follow-up.
 
 - [ ] **Task 5: Airports + map chrome**
   - Files: `app/airports/page.tsx`, `components/map/AirlineMap.tsx`,
@@ -291,6 +294,27 @@ Ordered; each task is one commit (`type(scope): description`).
   milestone, IPO, situation, event banner, empty startup, reputation crisis,
   coach overlay, populated `lived` dashboard @390 + @1280 — all isolated kinds,
   all overflow 0. Screenshots: `/tmp/opencode/review/t3/` + `t3shell/`.
+
+### Task 4 (2026-10-12, committed + pushed per standing instruction)
+
+- `npx tsc --noEmit` → clean. `npm run build` → success (isolated full-tree copy).
+- v5 §12: `.chip` segmented pills, `.tile-ic`, `.text-btn`, `.sub-card`, `.kv`
+  rows, `.plane-card` + `.spec-grid`, `.recommend-chip`, `.sell-value`,
+  `.route-overview-layout`, `.map-loading`, `.warn-card`, `.route-card`,
+  price zones/sensitivity, `.night-warning`, `.route-suggest`, `.econ-preview`
+  + `.econ-grid`, range input styling. Fleet icon buttons 32→40px, category
+  pills unified, wear/profit colors via tokens (dark-safe).
+- TSX: 6 inline modal backdrops → `.modal-backdrop`; hardcoded hexes → vars /
+  positive/negative; X buttons → `.icon-btn`; all fleet/route controls ≥36px.
+- Legacy deletion: 10 rules v2 (dead helpers), 7 v2-extra (incl. dead
+  `.route-animated` referencing missing keyframes), 32 v3 (price/SVG-map
+  remnants), 3 v4. Dead `@keyframes golden-glow` removed; `route-dash` kept
+  (Leaflet uses it). `.map-expand` kept for Task 5.
+- Captures @390px: fleet empty/catalog/hangar + 4 modals (details/upgrade/rename
+  /sell), routes empty/list + create/edit modals, dark pages — 13/13 correct
+  kinds, overflow 0. Standard sweep /fleet+/routes @390/1280 × light/dark:
+  scrollW overflow 0 (only Leaflet tile/marker internals bleed inside their
+  clipped container — Task 5 area). Screenshots: `/tmp/opencode/review/t4/`.
 
 ## Handoff
 

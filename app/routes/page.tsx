@@ -207,27 +207,14 @@ function RoutesContent() {
       />
 
       {planes.length === 0 && (
-        <div
-          className="card"
-          style={{
-            background: '#fffbeb',
-            borderColor: '#fde68a',
-            padding: '16px 20px',
-            marginBottom: 20,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <AlertCircle color="#d97706" size={20} />
-            <span style={{ fontSize: 13, color: '#92400e' }}>
+        <div className="card warn-card">
+          <div>
+            <AlertCircle color="var(--accent-ink)" size={20} />
+            <span>
               Bạn cần sở hữu ít nhất 1 chiếc máy bay trước khi mở đường bay thương mại.
             </span>
           </div>
-          <Link className="btn" href="/fleet" style={{ padding: '8px 16px', fontSize: 12 }}>
+          <Link className="btn" href="/fleet">
             Đến Đội bay để mua
           </Link>
         </div>
@@ -279,21 +266,16 @@ function RoutesContent() {
                 return (
                   <div
                     key={r.id}
-                    className="card"
-                    style={{
-                      padding: 14,
-                      background: r.active ? 'var(--surface)' : 'rgba(0,0,0,0.02)',
-                      border: r.active ? '1px solid var(--line)' : '1px dashed var(--line)',
-                    }}
+                    className={`card route-card ${r.active ? '' : 'inactive'}`}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 8 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <b style={{ fontSize: 16 }}>
-                            {r.from} <span style={{ color: '#0a58ca' }}>⟷</span> {r.to}
+                            {r.from} <span style={{ color: 'var(--blue)' }}>⟷</span> {r.to}
                           </b>
                           {isBaseDiscount && (
-                            <span className="badge" style={{ fontSize: 10 }}>
+                            <span className="badge">
                               -20% phí Hub
                             </span>
                           )}
@@ -307,28 +289,29 @@ function RoutesContent() {
                       </div>
 
                       {/* Controls */}
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, flex: 'none' }}>
                         <button
-                          className="btn ghost"
+                          className="btn ghost icon-btn"
                           onClick={() => toggleRoute(r.id)}
-                          style={{ padding: 6, minHeight: 32 }}
                           title={r.active ? 'Tạm dừng khai thác' : 'Tiếp tục khai thác'}
+                          aria-label={r.active ? 'Tạm dừng khai thác' : 'Tiếp tục khai thác'}
                         >
                           {r.active ? <Pause size={14} /> : <Play size={14} />}
                         </button>
                         <button
-                          className="btn ghost"
+                          className="btn ghost icon-btn"
                           onClick={() => handleOpenEdit(r)}
-                          style={{ padding: 6, minHeight: 32 }}
                           title="Chỉnh sửa giá vé & tần suất"
+                          aria-label="Chỉnh sửa giá vé và tần suất"
                         >
                           <Edit3 size={14} />
                         </button>
                         <button
-                          className="btn ghost"
+                          className="btn ghost icon-btn"
                           onClick={() => removeRoute(r.id)}
-                          style={{ padding: 6, minHeight: 32, color: '#e84b3c' }}
+                          style={{ color: 'var(--danger)' }}
                           title="Hủy đường bay và trả slot"
+                          aria-label="Hủy đường bay và trả slot"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -350,10 +333,8 @@ function RoutesContent() {
                         Lấp đầy: <b>{Math.round((r.loadFactor || 0.8) * 100)}%</b> · Cạnh tranh: <b>{r.competition || 1} hãng AI</b>
                       </span>
                       <b
-                        style={{
-                          fontSize: 14,
-                          color: (r.profitPerHour || 0) >= 0 ? '#12a678' : '#e84b3c',
-                        }}
+                        className={(r.profitPerHour || 0) >= 0 ? 'positive' : 'negative'}
+                        style={{ fontSize: 14 }}
                       >
                         {(r.profitPerHour || 0) >= 0 ? '+' : ''}
                         {formatCurrency(r.profitPerHour || 0, currency)}/giờ
@@ -367,20 +348,12 @@ function RoutesContent() {
         </div>
       </div>
 
-      <div className="card price-watch-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><span className="eyebrow">THEO DÕI GIÁ</span><h2 className="section-title" style={{margin:'4px 0'}}>Bạn và đối thủ đang bán thế nào?</h2></div><button className="btn ghost" onClick={()=>setRouteTab(routeTab==='prices'?'map':'prices')}>{routeTab==='prices'?'Đóng theo dõi giá':'Mở theo dõi giá'}</button></div>{routeTab==='prices'&&<div className="table-wrap"><table><thead><tr><th>Đường bay</th><th>Giá hãng bạn</th><th>Giá VietSky</th><th>Trạng thái</th></tr></thead><tbody>{routes.map(r=>{const rival=r.competitorTicketPrice||Math.round(basePrice(distanceKm(airports.find(a=>a.code===r.from)!,airports.find(a=>a.code===r.to)!))*(.9+((r.competition||1)%3)*.08));return <tr key={r.id}><td>{r.from} → {r.to}</td><td>{formatCurrency(r.ticketPrice,currency)}</td><td>{formatCurrency(rival,currency)}</td><td>{r.ticketPrice>rival*1.25?<b style={{color:'#dc2626'}}>Hớ giá · đối thủ đang hút khách</b>:<span style={{color:'#16a34a'}}>Cạnh tranh tốt</span>}</td></tr>})}</tbody></table></div>}{!routes.length&&<p className="muted">Mở đường bay để bắt đầu theo dõi giá đối thủ.</p>}</div>
+      <div className="card price-watch-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><span className="eyebrow">THEO DÕI GIÁ</span><h2 className="section-title" style={{margin:'4px 0'}}>Bạn và đối thủ đang bán thế nào?</h2></div><button className="btn ghost" onClick={()=>setRouteTab(routeTab==='prices'?'map':'prices')}>{routeTab==='prices'?'Đóng theo dõi giá':'Mở theo dõi giá'}</button></div>{routeTab==='prices'&&<div className="table-wrap"><table><thead><tr><th>Đường bay</th><th>Giá hãng bạn</th><th>Giá VietSky</th><th>Trạng thái</th></tr></thead><tbody>{routes.map(r=>{const rival=r.competitorTicketPrice||Math.round(basePrice(distanceKm(airports.find(a=>a.code===r.from)!,airports.find(a=>a.code===r.to)!))*(.9+((r.competition||1)%3)*.08));return <tr key={r.id}><td>{r.from} → {r.to}</td><td>{formatCurrency(r.ticketPrice,currency)}</td><td>{formatCurrency(rival,currency)}</td><td>{r.ticketPrice>rival*1.25?<b className="negative">Hớ giá · đối thủ đang hút khách</b>:<span className="positive">Cạnh tranh tốt</span>}</td></tr>})}</tbody></table></div>}{!routes.length&&<p className="muted">Mở đường bay để bắt đầu theo dõi giá đối thủ.</p>}</div>
 
       {/* CREATE ROUTE MODAL */}
       {isCreateOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.65)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => setIsCreateOpen(false)}
         >
           <div
@@ -397,7 +370,7 @@ function RoutesContent() {
                   Tối ưu hóa giá vé và hệ số lấp đầy để đạt lợi nhuận cao nhất
                 </div>
               </div>
-              <button className="btn ghost" onClick={() => setIsCreateOpen(false)} style={{ padding: 6, minHeight: 32 }}>
+              <button className="btn ghost icon-btn" onClick={() => setIsCreateOpen(false)} aria-label="Đóng">
                 <X size={18} />
               </button>
             </div>
@@ -448,7 +421,7 @@ function RoutesContent() {
             <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
               Khoảng cách hành trình: <b>{distance.toLocaleString('vi-VN')} km</b>
               {eligiblePlanes.length === 0 && (
-                <span style={{ color: '#e84b3c', display: 'block', marginTop: 2 }}>
+                <span className="negative" style={{ display: 'block', marginTop: 2 }}>
                   ⚠️ Không có máy bay nào trong đội bay đủ tầm bay cho tuyến này ({distance} km)!
                 </span>
               )}
@@ -458,7 +431,7 @@ function RoutesContent() {
             <div style={{ marginTop: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label className="label" style={{ margin: 0 }}>
-                  Giá vé mỗi khách: <b style={{ color: '#0a58ca', fontSize: 16 }}>{formatCurrency(activePrice, currency)}</b>
+                  Giá vé mỗi khách: <b className="tabular-nums" style={{ color: 'var(--blue)', fontSize: 16 }}>{formatCurrency(activePrice, currency)}</b>
                 </label>
                 <span className="muted" style={{ fontSize: 11 }}>
                   Chuẩn đề xuất: {formatCurrency(recommendedPrice, currency)}
@@ -471,7 +444,7 @@ function RoutesContent() {
                 step={5}
                 value={activePrice}
                 onChange={(e) => setCustomPrice(Number(e.target.value))}
-                style={{ width: '100%', marginTop: 8, accentColor: '#0a58ca' }}
+                style={{ marginTop: 8 }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted)' }}>
                 <span>Giá rẻ kích cầu</span>
@@ -484,7 +457,7 @@ function RoutesContent() {
             <div style={{ marginTop: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label className="label" style={{ margin: 0 }}>
-                  Tần suất bay <span title="Số chuyến trong một tuần mô phỏng. Ví dụ 7 chuyến tương đương khoảng một chuyến mỗi ngày." className="term-help">?</span>: <b style={{ color: '#0a58ca' }}>{frequency} chuyến / tuần</b>
+                  Tần suất bay <span title="Số chuyến trong một tuần mô phỏng. Ví dụ 7 chuyến tương đương khoảng một chuyến mỗi ngày." className="term-help">?</span>: <b style={{ color: 'var(--blue)' }}>{frequency} chuyến / tuần</b>
                 </label>
                 <span className="muted" style={{ fontSize: 11 }}>
                   ~{(frequency / 7).toFixed(1)} chuyến / ngày
@@ -497,7 +470,7 @@ function RoutesContent() {
                 step={1}
                 value={frequency}
                 onChange={(e) => setFrequency(Number(e.target.value))}
-                style={{ width: '100%', marginTop: 8, accentColor: '#0a58ca' }}
+                style={{ marginTop: 8 }}
               />
             </div>
 
@@ -505,25 +478,17 @@ function RoutesContent() {
 
             {/* Realtime Economics Preview Card */}
             {previewEcon && (
-              <div
-                className="card"
-                style={{
-                  background: 'var(--bg)',
-                  marginTop: 20,
-                  padding: 16,
-                  borderColor: 'rgba(10, 88, 202, 0.25)',
-                }}
-              >
-                <b style={{ fontSize: 13, display: 'block', marginBottom: 8, color: '#0a58ca' }}>
+              <div className="card econ-preview">
+                <b>
                   📊 Dự báo kinh tế đường bay (Thời gian thực)
                 </b>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, fontSize: 12 }}>
+                <div className="econ-grid">
                   <div>
                     <span className="muted">Hệ số lấp đầy <span title="Tỷ lệ ghế có khách. Ví dụ 80% nghĩa là 80 ghế trong 100 ghế có người." className="term-help">?</span></span>
                     <br />
-                    <b style={{ color: previewEcon.loadFactor > 0.75 ? '#12a678' : 'inherit' }}>
+                    <b style={{ color: previewEcon.loadFactor > 0.75 ? 'var(--success)' : 'inherit' }}>
                       {Math.round(previewEcon.loadFactor * 100)}%
-                    </b><small style={{display:'block'}}>~{Math.round(currentPlane.capacity*previewEcon.loadFactor*frequency/7)} khách/tuần</small>
+                    </b><small>~{Math.round(currentPlane.capacity*previewEcon.loadFactor*frequency/7)} khách/tuần</small>
                   </div>
                   <div>
                     <span className="muted">Doanh thu / giờ</span>
@@ -533,7 +498,7 @@ function RoutesContent() {
                   <div>
                     <span className="muted">Chi phí / giờ</span>
                     <br />
-                    <b style={{ color: '#e84b3c' }}>-{formatCurrency(previewEcon.costPerHour, currency)}</b>
+                    <b className="negative">-{formatCurrency(previewEcon.costPerHour, currency)}</b>
                   </div>
                 </div>
 
@@ -549,10 +514,8 @@ function RoutesContent() {
                 >
                   <span className="muted" style={{ fontSize: 12 }}>Lợi nhuận ròng ước tính:</span>
                   <b
-                    style={{
-                      fontSize: 16,
-                      color: previewEcon.profitPerHour >= 0 ? '#12a678' : '#e84b3c',
-                    }}
+                    className={previewEcon.profitPerHour >= 0 ? 'positive' : 'negative'}
+                    style={{ fontSize: 16 }}
                   >
                     {previewEcon.profitPerHour >= 0 ? '+' : ''}
                     {formatCurrency(previewEcon.profitPerHour, currency)} / giờ
@@ -577,15 +540,7 @@ function RoutesContent() {
       {/* EDIT ROUTE MODAL */}
       {editingRoute && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.65)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => setEditingRoute(null)}
         >
           <div
@@ -599,7 +554,7 @@ function RoutesContent() {
                   Điều chỉnh đường bay {editingRoute.from} ⟷ {editingRoute.to}
                 </h3>
               </div>
-              <button className="btn ghost" onClick={() => setEditingRoute(null)} style={{ padding: 6, minHeight: 32 }}>
+              <button className="btn ghost icon-btn" onClick={() => setEditingRoute(null)} aria-label="Đóng">
                 <X size={18} />
               </button>
             </div>
@@ -612,7 +567,6 @@ function RoutesContent() {
               step={5}
               value={editPrice}
               onChange={(e) => setEditPrice(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#0a58ca' }}
             />
 
             <label className="label" style={{ marginTop: 16 }}>Tần suất: {editFrequency} chuyến/tuần</label>
@@ -623,7 +577,6 @@ function RoutesContent() {
               step={1}
               value={editFrequency}
               onChange={(e) => setEditFrequency(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#0a58ca' }}
             />
 
             <label className="label" style={{ marginTop: 16 }}>Thay đổi máy bay</label>
