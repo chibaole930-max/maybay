@@ -61,6 +61,8 @@ export interface Pilot {
   /** Cho phep client tang gia tri BXH toi da bao nhieu lan trong mot khoang thoi gian. */
   creditUsed?: number;
   creditWindowAt?: number;
+  /** Số slot sân bay đã thắng qua đấu giá. */
+  slots?: number;
   /**
  * Chi so cao nhat da dat trong ngay, tach theo tung loai — dung tinh tien do
  * nhiem vu hang ngay. `bestToday.value` chi la muc cua gia tri hang, khong phai
@@ -90,7 +92,29 @@ export interface ChatMsg {
   /** Dung de rate limit theo nguoi gui — khong tien cho viec xem `sender`. */
   senderId?: string;
 }
-export interface SlotAuction { id: string; airport: string; price: number; bidder: string; endsAt: number; }
+/**
+ * Phien dau gia slot sân bay.
+ *
+ * Nguoi dang gia da bi tru `escrowed` ngay luc dat — xem `lib/server/auction.ts`
+ * de biet co che ky quy va khi nao tien duoc hoan.
+ */
+export interface SlotAuction {
+  id: string;
+  airport: string;
+  /** Gia hien tai — muc dau cao nhat tinh toi thoi diem nay. */
+  price: number;
+  /** So slot dang rao; thang se cong vao `pilot.slots`. */
+  slots: number;
+  /** Ma hang cua nguoi dang giu gia cao nhat. Rong = chua ai dau vao. */
+  bidder: string;
+  bidderId: string;
+  bidderName: string;
+  /** Ai mo phien dau gia — nguoi nay khong bi tru tien luc mo. */
+  openerId: string;
+  /** So tien da bi giu khoai tu nguoi dang gia. */
+  escrowed: number;
+  endsAt: number;
+}
 
 /**
  * Mot lan mua ban tren cho may bay cu.

@@ -12,6 +12,12 @@ export type AlliancePreview = { name: string; members: number; capacity: number;
 export type UsedPlaneListing = { id: string; model: string; wear: number; price: number; seller: string };
 export type Account = { id: string; code: string; name: string; username?: string; createdAt?: number };
 
+/** Phiên đấu giá slot sân bay. */
+export type SlotAuction = {
+  id: string; airport: string; price: number; slots: number;
+  bidder: string; bidderName: string; endsAt: number;
+};
+
 /** Nhiệm vụ hằng ngày toàn server — tiến độ do máy chủ tính. */
 export type DailyMissions = {
   dayKey: string;
@@ -145,6 +151,41 @@ export const netClient = {
     }, null as unknown as { pilots: { code: string; name: string; level: number; reputation: number; value: number }[] });
     if (live?.pilots?.length) return live.pilots;
     return profiles.map(({ code, name, level, reputation, value }) => ({ code, name, level, reputation, value }));
+  },
+
+  /** Các phiên đấu giá slot đang mở. Gọi hàm này cũng chạy việc chốt các phiên đã hết hạn. */
+  async getAuctions(): Promise<SlotAuction[]> {
+    return safe(async () => {
+      const r = await fetch('/api/auction', { cache: 'no-store' });
+      if (!r.ok) throw new Error('auction failed');
+      return (await r.json() as { auctions: SlotAuction[] }).auctions;
+    }, [] as SlotAuction[]);
+  },
+
+  /** Mở phiên đấu giá mới. Ném lỗi khi server từ chối (sân bay đã có phiên...). */
+  async openAuction(airport: string, slots: number): Promise<{ auctions: SlotAuction[]; error?: string }> {
+    return this.auctionPost({ airport, slots });
+  },
+
+  /** Đặt giá. Server giữ ký quỹ ngay khi đặt — xem `/api/auction`. */
+  async bidAuction(auctionId: string, bid: number): Promise<{ auctions: SlotAuction[]; error?: string }> {
+    return this.auctionPost({ auctionId, bid });
+  },
+
+  /** Huỷ phiên mình mở khi chưa ai đặt giá. */
+  async cancelAuction(auctionId: string): Promise<{ auctions: SlotAuction[]; error?: string }> {
+    return this.auctionPost({ auctionId, cancel: true });
+  },
+
+  async auctionPost(body: Record<string, unknown>): Promise<{ auctions: SlotAuction[]; error?: string }> {
+    try {
+      const r = await fetch('/api/auction', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) });
+      const json = (await r.json().catch(() => ({}))) as { auctions?: SlotAuction[]; error?: string };
+      if (!r.ok) return { auctions: json.auctions ?? [], error: json.error || 'Thao tác thất bại.' };
+      return { auctions: json.auctions ?? [] };
+    } catch {
+      return { auctions: [], error: 'Không kết nối được máy chủ.' };
+    }
   },
 
   /** Nhiệm vụ hằng ngày toàn server. `null` khi chưa đăng nhập hoặc server lỗi. */
