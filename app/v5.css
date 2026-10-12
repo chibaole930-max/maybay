@@ -3196,6 +3196,12 @@ body.dark .leaflet-popup-content-wrapper {
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.65));
 }
 
+@keyframes route-dash {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
 .live-flight-panel {
   min-width: 0;
   max-height: 510px;
@@ -3598,5 +3604,295 @@ body.dark .leaflet-popup-content-wrapper {
 
   .real-map-teasers {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ========================================== 14. Finance/Missions/Ranks */
+.btn.success {
+  background: var(--success);
+  color: #fff;
+  box-shadow: 0 6px 14px -9px color-mix(in srgb, var(--success) 85%, transparent);
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-row {
+  display: flex;
+  gap: 10px;
+}
+
+.field-row > .input,
+.field-row > .select {
+  flex: 1;
+  min-width: 0;
+}
+
+.progress.success > i {
+  background: linear-gradient(90deg, var(--success), color-mix(in srgb, var(--success) 60%, #fff));
+}
+
+/* ------------------------------------------------------- ipo widgets */
+.ipo-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  color: var(--accent-ink);
+  background: linear-gradient(90deg, var(--accent-soft), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.ipo-status-strip span {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ipo-offer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 18px;
+  background: linear-gradient(110deg, var(--navy), #174c82 70%, var(--blue));
+  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--blue-2) 40%, transparent);
+}
+
+.ipo-offer-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: var(--accent);
+  color: #231602;
+  font-size: 27px;
+}
+
+.ipo-offer > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.ipo-offer .eyebrow {
+  color: #7dd3fc;
+}
+
+.ipo-offer h2 {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 5px 0;
+}
+
+.ipo-offer p {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #dbeafe;
+  margin: 0;
+}
+
+.ipo-offer > .btn {
+  white-space: nowrap;
+  background: var(--accent);
+  color: #231602;
+  box-shadow: none;
+  flex: none;
+}
+
+.ipo-confirm {
+  width: min(460px, 100%);
+  position: relative;
+  padding: 25px;
+}
+
+.ipo-confirm h2 {
+  margin: 10px 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.ipo-confirm p {
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.ipo-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.hardcore-frame {
+  border: 2px solid var(--danger) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 15%, transparent), var(--sh-2) !important;
+}
+
+.danger-card {
+  background: var(--danger-soft);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  color: var(--danger);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  border-radius: var(--r);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.danger-card b {
+  color: var(--danger);
+}
+
+.danger-card .muted {
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* ------------------------------------------------------ mission rows */
+.mission-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mission-row.mission-done {
+  border-color: color-mix(in srgb, var(--success) 55%, transparent);
+  background: color-mix(in srgb, var(--success) 5%, var(--surface));
+}
+
+.mission-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: min(260px, 100%);
+}
+
+.mission-ic {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 14px;
+  background: var(--surface-sunken);
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+}
+
+.mission-ic.done {
+  background: var(--success-soft);
+}
+
+.mission-side {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.mission-reward {
+  text-align: right;
+}
+
+.mission-reward .muted {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+}
+
+.mission-reward b {
+  display: block;
+  font-size: 15px;
+  font-family: var(--font-mono);
+  color: var(--blue);
+  margin-top: 2px;
+}
+
+.mission-xp {
+  font-size: 11px;
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------ achievements */
+.ach-card {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ach-card.locked {
+  opacity: 0.62;
+}
+
+.ach-card.unlocked {
+  border-color: var(--accent);
+}
+
+/* --------------------------------------------------------- podium/rows */
+.podium-first {
+  border-color: var(--accent) !important;
+}
+
+.podium-self {
+  background: var(--blue-light) !important;
+}
+
+.row-self {
+  background: var(--blue-light) !important;
+}
+
+/* -------------------------------------------- finance/missions responsive */
+@media (max-width: 700px) {
+  .ipo-offer {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 14px;
+  }
+
+  .ipo-offer p {
+    font-size: 11px;
+  }
+
+  .ipo-offer > .btn {
+    width: 100%;
+  }
+
+  .ipo-status-strip {
+    flex-wrap: wrap;
+  }
+
+  .ipo-status-strip span {
+    margin-left: 0;
+  }
+
+  .ipo-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .ipo-confirm-actions .btn {
+    width: 100%;
+  }
+
+  .mission-side {
+    width: 100%;
+    justify-content: space-between;
   }
 }

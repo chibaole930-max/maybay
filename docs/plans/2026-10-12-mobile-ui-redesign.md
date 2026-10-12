@@ -188,12 +188,15 @@ Ordered; each task is one commit (`type(scope): description`).
     screenshots sent to Telegram, committed + pushed per standing instruction;
     eye-review feedback will be applied as follow-up.
 
-- [ ] **Task 6: Finance + Missions + Leaderboard**
+- [x] **Task 6: Finance + Missions + Leaderboard**
   - Files: `app/finance/page.tsx`, `app/missions/page.tsx`, `app/leaderboard/page.tsx`,
     `app/v5.css`, legacy blocks
   - Depends on: Task 5
   - Verify: `npm run build`; screenshots incl. table-heavy and empty states → user
     eye-review; AC1, AC4.
+  - Status 2026-10-12: implemented, verified programmatically (see evidence),
+    screenshots sent to Telegram, committed + pushed per standing instruction;
+    eye-review feedback will be applied as follow-up.
 
 - [ ] **Task 7: Research + Staff + Community + Settings**
   - Files: `app/research/page.tsx`, `app/staff/page.tsx`, `app/community/page.tsx`,
@@ -346,6 +349,28 @@ Ordered; each task is one commit (`type(scope): description`).
   light/dark: 0. Note: seed airline is level ~1 so locked pages need explicit
   level injection — `shot.mjs` now unlocks to 11 for all future sweeps; locked
   states stay covered by teaser captures. Screenshots: `/tmp/opencode/review/t5/`.
+
+### Task 6 (2026-10-12, committed + pushed per standing instruction)
+
+- `npx tsc --noEmit` → clean. `npm run build` → success (isolated full-tree copy).
+- v5 §14: `.btn.success`, `.grow`, `.field-row` (input+button rows that could
+  overflow), `.progress.success`, IPO strip/offer/confirm, `.hardcore-frame`,
+  `.danger-card`, `.mission-row` + `.mission-ic` + `.mission-side` +
+  `.mission-reward` + `.mission-xp`, `.ach-card`, `.podium-first/self`,
+  `.row-self`. Leaderboard logic untouched (other agent's area — styles only).
+- TSX: loan/bankruptcy/profile modals → `.modal-backdrop`; breakdown/tx/loan
+  rows → `.kv` + positive/negative; timeframe + claim + copy + refresh buttons
+  → `.compact`/`.success`; mission tabs/rows → `.chip`/`.mission-*`; podium/
+  table/friends/profile colors → vars/classes; search/borrow/repay rows →
+  `.field-row`. Chart ink left as hex (SVG attrs).
+- Legacy deletion: 1 rule v3 (hardcore-frame), 20 rules v4 (IPO widgets);
+  `v4.css` retired entirely (only dead `:root` + moved `route-dash` remained) —
+  file deleted, import dropped from `layout.tsx` (commit verified to contain the
+  §section before pushing — T4 lesson applied).
+- Captures @390px: finance base/loan/IPO/bankrupt/dark, missions 4 tabs + dark,
+  leaderboard + profile modal + friends + dark — 15/15 correct, overflow 0.
+  Sweep /finance+/missions+/leaderboard @390/1280 × light/dark: 0.
+  Screenshots: `/tmp/opencode/review/t6/`.
 
 ## Handoff
 

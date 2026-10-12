@@ -4,7 +4,6 @@ import './v2.css';
 import './v2-extra.css';
 import './v2-pages.css';
 import './v3.css';
-import './v4.css';
 import 'leaflet/dist/leaflet.css';
 // v5 owns the cascade: loaded last so the new design layer wins over v2–v4.
 import './v5.css';

@@ -143,32 +143,18 @@ function FinanceContent() {
 
       {/* Bankruptcy Warning Alert */}
       {currentCash < 0 && (
-        <div
-          className="card"
-          style={{
-            background: '#fef2f2',
-            borderColor: '#f87171',
-            padding: 20,
-            marginBottom: 20,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 16,
-            flexWrap: 'wrap',
-          }}
-        >
+        <div className="card danger-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <AlertTriangle color="#dc2626" size={26} />
+            <AlertTriangle color="var(--danger)" size={26} />
             <div>
-              <b style={{ color: '#991b1b', fontSize: 15 }}>Cảnh báo nguy cơ phá sản!</b>
-              <div style={{ color: '#b91c1c', fontSize: 13, marginTop: 2 }}>
+              <b style={{ fontSize: 15 }}>Cảnh báo nguy cơ phá sản!</b>
+              <div style={{ fontSize: 13, marginTop: 2 }}>
                 Số dư tài khoản đang bị âm ({formatCurrency(currentCash, currency)}). Nếu kéo dài quá 7 ngày, hãng sẽ bị đình chỉ hoạt động.
               </div>
             </div>
           </div>
           <button
-            className="btn"
-            style={{ background: '#dc2626' }}
+            className="btn danger"
             onClick={restructure}
           >
             <RotateCcw size={16} /> Kích hoạt bảo hiểm tái cơ cấu (50% tài sản)
@@ -202,7 +188,7 @@ function FinanceContent() {
         <StatCard
           title="Dự báo 24 giờ tới"
           value={
-            <span style={{ color: forecast24h >= 0 ? '#12a678' : '#e84b3c' }}>
+            <span className={forecast24h >= 0 ? 'positive' : 'negative'}>
               {forecast24h >= 0 ? '+' : ''}
               {formatCurrency(forecast24h, currency)}
             </span>
@@ -228,15 +214,13 @@ function FinanceContent() {
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               <button
-                className={`btn ${timeframe === 7 ? '' : 'ghost'}`}
-                style={{ padding: '6px 12px', minHeight: 34, fontSize: 12 }}
+                className={`btn compact ${timeframe === 7 ? '' : 'ghost'}`}
                 onClick={() => setTimeframe(7)}
               >
                 7 ngày
               </button>
               <button
-                className={`btn ${timeframe === 30 ? '' : 'ghost'}`}
-                style={{ padding: '6px 12px', minHeight: 34, fontSize: 12 }}
+                className={`btn compact ${timeframe === 30 ? '' : 'ghost'}`}
                 onClick={() => setTimeframe(30)}
               >
                 30 ngày
@@ -279,30 +263,30 @@ function FinanceContent() {
         {/* Categories Breakdown */}
         <div className="card">
           <h2 className="section-title">Cơ cấu thu chi hoạt động</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-              <span className="muted">Doanh thu bán vé máy bay</span>
-              <b style={{ color: '#12a678' }}>+{formatCurrency(breakdownStats.ticketIncome, currency)}</b>
+          <div style={{ fontSize: 13 }}>
+            <div className="kv">
+              <span>Doanh thu bán vé máy bay</span>
+              <b className="positive">+{formatCurrency(breakdownStats.ticketIncome, currency)}</b>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-              <span className="muted">Chi phí nhiên liệu Jet A-1</span>
-              <b style={{ color: '#e84b3c' }}>-{formatCurrency(breakdownStats.fuelExpense, currency)}</b>
+            <div className="kv">
+              <span>Chi phí nhiên liệu Jet A-1</span>
+              <b className="negative">-{formatCurrency(breakdownStats.fuelExpense, currency)}</b>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-              <span className="muted">Bảo dưỡng & phụ tùng kỹ thuật</span>
-              <b style={{ color: '#e84b3c' }}>-{formatCurrency(breakdownStats.maintExpense, currency)}</b>
+            <div className="kv">
+              <span>Bảo dưỡng & phụ tùng kỹ thuật</span>
+              <b className="negative">-{formatCurrency(breakdownStats.maintExpense, currency)}</b>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-              <span className="muted">Lương tổ bay & kỹ sư</span>
-              <b style={{ color: '#e84b3c' }}>-{formatCurrency(breakdownStats.salaryExpense, currency)}</b>
+            <div className="kv">
+              <span>Lương tổ bay & kỹ sư</span>
+              <b className="negative">-{formatCurrency(breakdownStats.salaryExpense, currency)}</b>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-              <span className="muted">Phí slot & dịch vụ sân bay</span>
-              <b style={{ color: '#e84b3c' }}>-{formatCurrency(breakdownStats.airportExpense, currency)}</b>
+            <div className="kv">
+              <span>Phí slot & dịch vụ sân bay</span>
+              <b className="negative">-{formatCurrency(breakdownStats.airportExpense, currency)}</b>
             </div>
-            {!simpleMode&&<div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-              <span className="muted">Lãi vay ngân hàng (5%/ngày)</span>
-              <b style={{ color: '#e84b3c' }}>-{formatCurrency(loan * 0.05, currency)}/ngày</b>
+            {!simpleMode&&<div className="kv">
+              <span>Lãi vay ngân hàng (5%/ngày)</span>
+              <b className="negative">-{formatCurrency(loan * 0.05, currency)}/ngày</b>
             </div>}
           </div>
         </div>
@@ -353,10 +337,8 @@ function FinanceContent() {
                     <td style={{ fontWeight: 500 }}>{tx.note}</td>
                     <td>
                       <b
-                        style={{
-                          color: tx.amount >= 0 ? '#12a678' : '#e84b3c',
-                          fontSize: 14,
-                        }}
+                        className={tx.amount >= 0 ? 'positive' : 'negative'}
+                        style={{ fontSize: 14 }}
                       >
                         {tx.amount >= 0 ? '+' : ''}
                         {formatCurrency(tx.amount, currency)}
@@ -373,15 +355,7 @@ function FinanceContent() {
       {/* MODAL: LOAN & REPAY */}
       {loanModalOpen && !simpleMode && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.65)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => setLoanModalOpen(false)}
         >
           <div
@@ -395,28 +369,17 @@ function FinanceContent() {
             </p>
 
             {/* Current Loan Stats */}
-            <div
-              style={{
-                background: 'var(--bg)',
-                borderRadius: 14,
-                padding: 16,
-                marginBottom: 20,
-                fontSize: 13,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="muted">Hạn mức khả dụng có thể vay:</span>
-                <b style={{ color: '#12a678' }}>{formatCurrency(maxBorrowLimit, currency)}</b>
+            <div className="sub-card" style={{ marginBottom: 20, fontSize: 13 }}>
+              <div className="kv">
+                <span>Hạn mức khả dụng có thể vay:</span>
+                <b className="positive">{formatCurrency(maxBorrowLimit, currency)}</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="muted">Dư nợ tín dụng hiện tại:</span>
-                <b style={{ color: '#e84b3c' }}>{formatCurrency(loan, currency)}</b>
+              <div className="kv">
+                <span>Dư nợ tín dụng hiện tại:</span>
+                <b className="negative">{formatCurrency(loan, currency)}</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="muted">Tiền lãi phát sinh mỗi ngày:</span>
+              <div className="kv">
+                <span>Tiền lãi phát sinh mỗi ngày:</span>
                 <b>{formatCurrency(loan * 0.05, currency)}</b>
               </div>
             </div>
@@ -424,7 +387,7 @@ function FinanceContent() {
             {/* Borrow Tab */}
             <div style={{ marginBottom: 20 }}>
               <label className="label">Vay thêm vốn kinh doanh</label>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div className="field-row">
                 <input
                   type="number"
                   className="input"
@@ -448,7 +411,7 @@ function FinanceContent() {
             {loan > 0 && (
               <div style={{ borderTop: '1px solid var(--line)', paddingTop: 18 }}>
                 <label className="label">Trả nợ ngân hàng</label>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div className="field-row">
                   <input
                     type="number"
                     className="input"

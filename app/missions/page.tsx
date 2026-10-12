@@ -148,32 +148,28 @@ function MissionsContent() {
       />
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         <button
-          className={`btn ${tab === 'starter' ? '' : 'ghost'}`}
+          className={`chip ${tab === 'starter' ? 'active' : ''}`}
           onClick={() => setTab('starter')}
-          style={{ padding: '8px 16px', minHeight: 38, fontSize: 13 }}
         >
           <Target size={16} /> Nhiệm vụ tân thủ (7 bước)
         </button>
         <button
-          className={`btn ${tab === 'daily' ? '' : 'ghost'}`}
+          className={`chip ${tab === 'daily' ? 'active' : ''}`}
           onClick={() => setTab('daily')}
-          style={{ padding: '8px 16px', minHeight: 38, fontSize: 13 }}
         >
           <Clock size={16} /> Nhiệm vụ hàng ngày (reset 0h)
         </button>
         <button
-          className={`btn ${tab === 'weekly' ? '' : 'ghost'}`}
+          className={`chip ${tab === 'weekly' ? 'active' : ''}`}
           onClick={() => setTab('weekly')}
-          style={{ padding: '8px 16px', minHeight: 38, fontSize: 13 }}
         >
           <Sparkles size={16} /> Mùa tuần {weeklySeason?.id || ''} ({(weeklySeason?.quests || []).filter((q) => q.done).length}/{(weeklySeason?.quests || []).length})
         </button>
         <button
-          className={`btn ${tab === 'achievements' ? '' : 'ghost'}`}
+          className={`chip ${tab === 'achievements' ? 'active' : ''}`}
           onClick={() => setTab('achievements')}
-          style={{ padding: '8px 16px', minHeight: 38, fontSize: 13 }}
         >
           <Trophy size={16} /> Bộ sưu tập thành tựu ({completedAchievementsCount}/30)
         </button>
@@ -189,32 +185,13 @@ function MissionsContent() {
             return (
               <div
                 key={m.id}
-                className="card"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 16,
-                  flexWrap: 'wrap',
-                  borderColor: isCompleted && m.reward > 0 ? '#12a678' : undefined,
-                  background: isCompleted && m.reward > 0 ? 'rgba(18, 166, 120, 0.04)' : undefined,
-                }}
+                className={`card mission-row ${isCompleted && m.reward > 0 ? 'mission-done' : ''}`}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 260 }}>
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 14,
-                      background: isCompleted ? '#12a67815' : 'var(--bg)',
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontSize: 24,
-                    }}
-                  >
+                <div className="mission-main">
+                  <div className={`mission-ic ${isCompleted ? 'done' : ''}`}>
                     {m.icon || '✈️'}
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div className="grow">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <b style={{ fontSize: 15 }}>{m.title}</b>
                       {isCompleted && m.reward === 0 && (
@@ -229,10 +206,10 @@ function MissionsContent() {
 
                     {/* Progress bar */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div className="progress" style={{ flex: 1, height: 6 }}>
-                        <i style={{ width: `${percent}%`, background: isCompleted ? '#12a678' : '#0a58ca' }} />
+                      <div className={`progress grow ${isCompleted ? 'success' : ''}`} style={{ height: 6 }}>
+                        <i style={{ width: `${percent}%` }} />
                       </div>
-                      <span className="muted" style={{ fontSize: 11, minWidth: 60, textAlign: 'right' }}>
+                      <span className="muted tabular-nums" style={{ fontSize: 11, minWidth: 60, textAlign: 'right' }}>
                         {Math.floor(m.progress).toLocaleString('vi-VN')} / {m.target.toLocaleString('vi-VN')}
                       </span>
                     </div>
@@ -240,32 +217,28 @@ function MissionsContent() {
                 </div>
 
                 {/* Reward & Claim button */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div className="muted" style={{ fontSize: 11 }}>PHẦN THƯỞNG</div>
-                    <b style={{ fontSize: 15, color: '#0a58ca' }}>
+                <div className="mission-side">
+                  <div className="mission-reward">
+                    <div className="muted">PHẦN THƯỞNG</div>
+                    <b>
                       +{formatCurrency(m.reward, currency)}
                     </b>
-                    <div style={{ fontSize: 11, color: '#ffb800', fontWeight: 700 }}>
+                    <div className="mission-xp">
                       +{m.rewardXp || 100} XP
                     </div>
                   </div>
 
                   {m.reward > 0 ? (
                     <button
-                      className="btn"
+                      className={`btn ${isCompleted ? 'success' : ''}`}
                       disabled={!isCompleted}
                       onClick={() => claimMission(m.id)}
-                      style={{
-                        padding: '10px 18px',
-                        background: isCompleted ? '#12a678' : undefined,
-                      }}
                     >
                       {isCompleted ? 'Nhận thưởng 🎁' : 'Chưa đạt'}
                     </button>
                   ) : (
-                    <button className="btn ghost" disabled style={{ padding: '8px 14px', fontSize: 12 }}>
-                      <CheckCircle2 size={16} color="#12a678" /> Hoàn thành
+                    <button className="btn ghost compact" disabled>
+                      <CheckCircle2 size={16} color="var(--success)" /> Hoàn thành
                     </button>
                   )}
                 </div>
@@ -283,59 +256,38 @@ function MissionsContent() {
             const percent = Math.min(100, Math.round((m.progress / m.target) * 100));
 
             return (
-              <div
-                key={m.id}
-                className="card"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 16,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 260 }}>
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 14,
-                      background: 'var(--bg)',
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontSize: 24,
-                    }}
-                  >
+              <div key={m.id} className="card mission-row">
+                <div className="mission-main">
+                  <div className="mission-ic">
                     {m.icon || '🎯'}
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div className="grow">
                     <b style={{ fontSize: 15 }}>{m.title}</b>
                     <div className="muted" style={{ fontSize: 12, margin: '4px 0 8px' }}>
                       {m.description}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div className="progress" style={{ flex: 1, height: 6 }}>
+                      <div className={`progress grow ${isCompleted ? 'success' : ''}`} style={{ height: 6 }}>
                         <i style={{ width: `${percent}%` }} />
                       </div>
-                      <span className="muted" style={{ fontSize: 11, minWidth: 60, textAlign: 'right' }}>
+                      <span className="muted tabular-nums" style={{ fontSize: 11, minWidth: 60, textAlign: 'right' }}>
                         {Math.floor(m.progress).toLocaleString('vi-VN')} / {m.target.toLocaleString('vi-VN')}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div className="muted" style={{ fontSize: 11 }}>PHẦN THƯỞNG</div>
-                    <b style={{ fontSize: 15, color: '#0a58ca' }}>
+                <div className="mission-side">
+                  <div className="mission-reward">
+                    <div className="muted">PHẦN THƯỞNG</div>
+                    <b>
                       +{formatCurrency(m.reward, currency)}
                     </b>
                   </div>
                   <button
-                    className="btn"
+                    className={`btn ${isCompleted && m.reward > 0 ? 'success' : ''}`}
                     disabled={!isCompleted || m.reward <= 0}
                     onClick={() => claimMission(m.id)}
-                    style={{ background: isCompleted ? '#12a678' : undefined }}
                   >
                     {m.reward <= 0 ? 'Đã nhận' : isCompleted ? 'Nhận thưởng 🎁' : 'Đang làm'}
                   </button>
@@ -349,18 +301,18 @@ function MissionsContent() {
               hoan toan voi bo nhiemvu cuc bo o tren. */}
           {serverMissions && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
-              <div className="card" style={{ background: 'rgba(10, 88, 202, 0.05)' }}>
+              <div className="card sub-card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <Sparkles size={18} color="#0a58ca" />
+                  <Sparkles size={18} color="var(--blue)" />
                   <b style={{ fontSize: 15 }}>Nhiệm vụ toàn server</b>
                   {serverMissions.server && (
-                    <span className="muted" style={{ fontSize: 12 }}>
+                    <span className="muted tabular-nums" style={{ fontSize: 12 }}>
                       {serverMissions.server.participating}/{serverMissions.server.total} hãng đang chơi ·{' '}
                       {serverMissions.server.totalPlanes.toLocaleString('vi-VN')} máy bay ·{' '}
                       {serverMissions.server.totalRoutes.toLocaleString('vi-VN')} đường bay
                     </span>
                   )}
-                  <button className="btn ghost" onClick={() => void loadServerMissions()} style={{ marginLeft: 'auto', padding: '6px 12px', fontSize: 12 }}>
+                  <button className="btn ghost compact" onClick={() => void loadServerMissions()} style={{ marginLeft: 'auto' }}>
                     {serverBusy ? 'Đang tải…' : 'Làm mới'}
                   </button>
                 </div>
@@ -373,29 +325,28 @@ function MissionsContent() {
                 const percent = Math.min(100, Math.round((m.progress / m.target) * 100));
                 const claimable = m.done && !m.claimed;
                 return (
-                  <div key={m.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: 260 }}>
+                  <div key={m.id} className="card mission-row">
+                    <div className="grow" style={{ minWidth: 260 }}>
                       <b style={{ fontSize: 15 }}>{m.title}</b>
                       <div className="muted" style={{ fontSize: 12, margin: '4px 0 8px' }}>{m.description}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div className="progress" style={{ flex: 1, height: 6 }}>
-                          <i style={{ width: `${percent}%`, background: m.done ? '#12a678' : '#0a58ca' }} />
+                        <div className={`progress grow ${m.done ? 'success' : ''}`} style={{ height: 6 }}>
+                          <i style={{ width: `${percent}%` }} />
                         </div>
-                        <span className="muted" style={{ fontSize: 11, minWidth: 96, textAlign: 'right' }}>
+                        <span className="muted tabular-nums" style={{ fontSize: 11, minWidth: 96, textAlign: 'right' }}>
                           {Math.floor(m.progress).toLocaleString('vi-VN')} / {m.target.toLocaleString('vi-VN')}
                         </span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <div className="muted" style={{ fontSize: 11 }}>THƯỞNG</div>
-                        <b style={{ fontSize: 15, color: '#0a58ca' }}>+{formatCurrency(m.reward, currency)}</b>
+                    <div className="mission-side">
+                      <div className="mission-reward">
+                        <div className="muted">THƯỞNG</div>
+                        <b>+{formatCurrency(m.reward, currency)}</b>
                       </div>
                       <button
-                        className="btn"
+                        className={`btn ${claimable ? 'success' : ''}`}
                         disabled={!claimable || serverBusy}
                         onClick={() => void claimServerMission(m.id)}
-                        style={{ background: claimable ? '#12a678' : undefined }}
                       >
                         {m.claimed ? '✓ Đã nhận' : m.done ? 'Nhận thưởng 🎁' : 'Đang làm'}
                       </button>
@@ -409,7 +360,7 @@ function MissionsContent() {
       )}
       {tab === 'weekly' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div className="card" style={{ background: 'var(--bg)', padding: '12px 16px' }}>
+          <div className="card sub-card">
             <b style={{ fontSize: 13 }}>Mùa {weeklySeason?.id} · reset Thứ 2 hàng tuần</b>
             <div className="muted" style={{ fontSize: 12 }}>Hoàn thành cả 3 quest tuần để giữ nhịp 7-30 ngày. Thưởng lớn gấp ~3x quest ngày.</div>
           </div>
@@ -417,19 +368,19 @@ function MissionsContent() {
             const isCompleted = m.progress >= m.target;
             const percent = Math.min(100, Math.round((m.progress / m.target) * 100));
             return (
-              <div key={m.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 260 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: 'var(--bg)', display: 'grid', placeItems: 'center', fontSize: 24 }}>{m.icon || '🎯'}</div>
-                  <div style={{ flex: 1 }}>
+              <div key={m.id} className="card mission-row">
+                <div className="mission-main">
+                  <div className="mission-ic">{m.icon || '🎯'}</div>
+                  <div className="grow">
                     <b style={{ fontSize: 15 }}>{m.title}</b>
                     <div className="muted" style={{ fontSize: 12, margin: '4px 0 8px' }}>{m.description}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div className="progress" style={{ flex: 1, height: 6 }}><i style={{ width: percent + '%' }} /></div>
-                      <span className="muted" style={{ fontSize: 11 }}>{Math.floor(m.progress).toLocaleString('vi-VN')} / {m.target.toLocaleString('vi-VN')}</span>
+                      <div className={`progress grow ${isCompleted ? 'success' : ''}`} style={{ height: 6 }}><i style={{ width: percent + '%' }} /></div>
+                      <span className="muted tabular-nums" style={{ fontSize: 11 }}>{Math.floor(m.progress).toLocaleString('vi-VN')} / {m.target.toLocaleString('vi-VN')}</span>
                     </div>
                   </div>
                 </div>
-                <button className="btn" disabled={!isCompleted || m.reward <= 0} onClick={() => claimMission(m.id)}>{m.reward <= 0 ? 'Đã nhận' : isCompleted ? 'Nhận thưởng' : 'Đang làm'}</button>
+                <button className={`btn ${isCompleted && m.reward > 0 ? 'success' : ''}`} disabled={!isCompleted || m.reward <= 0} onClick={() => claimMission(m.id)}>{m.reward <= 0 ? 'Đã nhận' : isCompleted ? 'Nhận thưởng' : 'Đang làm'}</button>
               </div>
             );
           })}
@@ -440,15 +391,8 @@ function MissionsContent() {
       {tab === 'achievements' && (
         <>
           <div
-            className="card"
-            style={{
-              background: 'var(--bg)',
-              padding: '16px 20px',
-              marginBottom: 20,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
+            className="card sub-card"
+            style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}
           >
             <div>
               <b style={{ fontSize: 14 }}>Tiến độ chinh phục thành tựu</b>
@@ -456,11 +400,11 @@ function MissionsContent() {
                 Đã mở khóa {completedAchievementsCount} trên tổng số 30 thành tựu hàng không
               </div>
             </div>
-            <div style={{ width: 140 }}>
+            <div style={{ minWidth: 140, flex: 1 }}>
               <div className="progress">
-                <i style={{ width: `${(completedAchievementsCount / 30) * 100}%`, background: '#ffb800' }} />
+                <i style={{ width: `${(completedAchievementsCount / 30) * 100}%` }} />
               </div>
-              <div style={{ fontSize: 11, textAlign: 'right', marginTop: 4, fontWeight: 700 }}>
+              <div className="tabular-nums" style={{ fontSize: 11, textAlign: 'right', marginTop: 4, fontWeight: 700 }}>
                 {Math.round((completedAchievementsCount / 30) * 100)}%
               </div>
             </div>
@@ -473,25 +417,11 @@ function MissionsContent() {
               return (
                 <div
                   key={ach.id}
-                  className="card"
-                  style={{
-                    padding: 18,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    opacity: isUnlocked ? 1 : 0.6,
-                    background: isUnlocked ? 'var(--surface)' : 'rgba(0,0,0,0.02)',
-                    borderColor: isUnlocked ? '#ffb800' : 'var(--line)',
-                  }}
+                  className={`card ach-card ${isUnlocked ? 'unlocked' : 'locked'}`}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                     <span style={{ fontSize: 32 }}>{ach.icon}</span>
-                    <span
-                      className="badge"
-                      style={{
-                        background: isUnlocked ? '#ffb80022' : 'var(--bg)',
-                        color: isUnlocked ? '#b45309' : 'var(--muted)',
-                      }}
-                    >
+                    <span className={`badge ${isUnlocked ? 'warn' : ''}`}>
                       {isUnlocked ? '✨ Đã mở khóa' : 'Chưa đạt'}
                     </span>
                   </div>

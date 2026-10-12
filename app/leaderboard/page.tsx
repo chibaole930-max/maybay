@@ -172,25 +172,23 @@ function LeaderboardContent() {
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
-            className={`btn ${activeTab === 'leaderboard' ? '' : 'ghost'}`}
+            className={`chip ${activeTab === 'leaderboard' ? 'active' : ''}`}
             onClick={() => setActiveTab('leaderboard')}
-            style={{ padding: '8px 16px', minHeight: 38, fontSize: 13 }}
           >
             <Trophy size={16} /> Bảng xếp hạng toàn quốc
           </button>
           <button
-            className={`btn ${activeTab === 'friends' ? '' : 'ghost'}`}
+            className={`chip ${activeTab === 'friends' ? 'active' : ''}`}
             onClick={() => setActiveTab('friends')}
-            style={{ padding: '8px 16px', minHeight: 38, fontSize: 13 }}
           >
             <Users size={16} /> Kết nối bạn bè & So sánh
           </button>
         </div>
 
         {activeTab === 'leaderboard' && (
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {[
               { id: 'all', label: 'Tổng giá trị' },
               { id: 'month', label: 'Theo tháng' },
@@ -199,8 +197,7 @@ function LeaderboardContent() {
               <button
                 key={p.id}
                 onClick={() => setFilterPeriod(p.id as any)}
-                className={`btn ${filterPeriod === p.id ? '' : 'ghost'}`}
-                style={{ padding: '6px 12px', minHeight: 34, fontSize: 12 }}
+                className={`chip ${filterPeriod === p.id ? 'active' : ''}`}
               >
                 {p.label}
               </button>
@@ -217,23 +214,21 @@ function LeaderboardContent() {
             {fullList.slice(0, 3).map((comp, idx) => (
               <div
                 key={comp.name}
-                className={`card ${comp.isHardcore?'hardcore-frame':''}`}
+                className={`card ${comp.isHardcore?'hardcore-frame':''} ${idx === 0 ? 'podium-first' : ''} ${comp.isPlayer ? 'podium-self' : ''}`}
                 onClick={() => { setProfileDetail(null); setSelectedProfile(comp); }}
                 style={{
                   textAlign: 'center',
                   cursor: 'pointer',
-                  borderColor: idx === 0 ? '#ffb800' : undefined,
-                  background: comp.isPlayer ? 'rgba(10, 88, 202, 0.04)' : undefined,
                 }}
               >
                 <div style={{ fontSize: 36 }}>{['🥇', '🥈', '🥉'][idx]}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#ffb800', marginTop: 4 }}>
+                <div className="eyebrow" style={{ color: 'var(--accent)', marginTop: 4 }}>
                   HẠNG #{idx + 1}
                 </div>
                 <b style={{ fontSize: 16, display: 'block', margin: '4px 0' }}>
                   {comp.name} {comp.isPlayer ? '(Bạn)' : ''} {comp.isHardcore&&<span className="hardcore-mark">⚡ Hardcore</span>}
                 </b>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#0a58ca', margin: '8px 0 4px' }}>
+                <div className="tabular-nums" style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue)', margin: '8px 0 4px' }}>
                   {formatCurrency(comp.valuation, currency)}
                 </div>
                 <div className="muted" style={{ fontSize: 12 }}>
@@ -274,13 +269,11 @@ function LeaderboardContent() {
                     <tr
                       key={comp.name}
                       onClick={() => { setProfileDetail(null); setSelectedProfile(comp); }}
-                      style={{
-                        cursor: 'pointer',
-                        background: comp.isPlayer ? 'rgba(10, 88, 202, 0.08)' : undefined,
-                      }}
+                      style={{ cursor: 'pointer' }}
+                      className={comp.isPlayer ? 'row-self' : undefined}
                     >
                       <td>
-                        <b style={{ color: idx < 3 ? '#ffb800' : 'inherit', fontSize: 14 }}>
+                        <b style={{ color: idx < 3 ? 'var(--accent)' : 'inherit', fontSize: 14 }}>
                           {idx + 1}
                         </b>
                       </td>
@@ -301,7 +294,7 @@ function LeaderboardContent() {
                         <b>{comp.baseHub}</b>
                       </td>
                       <td>
-                        <b style={{ color: '#0a58ca', fontSize: 14 }}>
+                        <b className="tabular-nums" style={{ color: 'var(--blue)', fontSize: 14 }}>
                           {formatCurrency(comp.valuation, currency)}
                         </b>
                       </td>
@@ -318,8 +311,8 @@ function LeaderboardContent() {
       {activeTab === 'friends' && (
         <div className="grid-2">
           {/* Your Friend Code */}
-          <div className="card">
-            <h2 className="section-title">Mã định danh Hãng của bạn</h2>
+            <div className="card sub-card">
+              <h2 className="section-title">Mã định danh Hãng của bạn</h2>
             <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
               Chia sẻ mã này với bạn bè để họ có thể tìm kiếm, theo dõi và so tài chỉ số vận hành
               với hãng bay của bạn.
@@ -336,10 +329,10 @@ function LeaderboardContent() {
                 margin: '18px 0',
               }}
             >
-              <b style={{ fontSize: 17, letterSpacing: 1, color: '#0a58ca', flex: 1 }}>
+              <b className="tabular-nums" style={{ fontSize: 17, letterSpacing: 1, color: 'var(--blue)', flex: 1 }}>
                 {playerFriendCode}
               </b>
-              <button className="btn secondary" onClick={handleCopyCode} style={{ padding: '8px 14px', fontSize: 12 }}>
+              <button className="btn secondary compact" onClick={handleCopyCode}>
                 {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Đã chép' : 'Sao chép'}
               </button>
             </div>
@@ -353,7 +346,7 @@ function LeaderboardContent() {
           <div className="card">
             <h2 className="section-title">Tìm kiếm & So sánh đối thủ</h2>
             <label className="label">Nhập mã hãng đối thủ hoặc bạn bè</label>
-            <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <div className="field-row" style={{ marginBottom: 16 }}>
               <input
                 className="input"
                 placeholder="Ví dụ: VNA3K9"
@@ -369,8 +362,8 @@ function LeaderboardContent() {
             <div className="muted" style={{ fontSize: 12 }}>
               Thử tìm kiếm các mã hãng mẫu của đối thủ:
               <br />
-              <code style={{ color: '#0a58ca' }}>VNA3K9</code> (VietSky),{' '}
-              <code style={{ color: '#0a58ca' }}>SAI8Q2</code> (Saigon Air), <code style={{color:'#0a58ca'}}>BAY5M1</code> (Cánh Én Việt)
+              <code style={{ color: 'var(--blue)' }}>VNA3K9</code> (VietSky),{' '}
+              <code style={{ color: 'var(--blue)' }}>SAI8Q2</code> (Saigon Air), <code style={{color:'var(--blue)'}}>BAY5M1</code> (Cánh Én Việt)
             </div>
           </div>
 
@@ -414,7 +407,7 @@ function LeaderboardContent() {
                       <tbody>
                         {ownProfile.trades.slice(0, 8).map((t) => (
                           <tr key={t.id}>
-                            <td><b style={{ color: t.side === 'mua' ? '#dc2626' : '#16a34a' }}>{t.side === 'mua' ? 'Mua' : 'Bán'}</b></td>
+                            <td><b className={t.side === 'mua' ? 'negative' : 'positive'}>{t.side === 'mua' ? 'Mua' : 'Bán'}</b></td>
                             <td>{t.model}</td>
                             <td className="muted">{t.counterparty}</td>
                             <td>{formatCurrency(t.price, currency)}</td>
@@ -433,15 +426,7 @@ function LeaderboardContent() {
       {/* PROFILE DETAILS MODAL */}
       {selectedProfile && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.65)',
-            zIndex: 80,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
+          className="modal-backdrop"
           onClick={() => { setProfileDetail(null); setSelectedProfile(null); }}
         >
           <div
@@ -467,35 +452,35 @@ function LeaderboardContent() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '16px 0', fontSize: 13 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="muted">Tổng giá trị hãng:</span>
-                <b style={{ color: '#0a58ca', fontSize: 15 }}>
+            <div style={{ padding: '8px 0', fontSize: 13 }}>
+              <div className="kv">
+                <span>Tổng giá trị hãng:</span>
+                <b className="tabular-nums" style={{ color: 'var(--blue)', fontSize: 15 }}>
                   {formatCurrency(selectedProfile.valuation, currency)}
                 </b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="muted">Số lượng máy bay:</span>
+              <div className="kv">
+                <span>Số lượng máy bay:</span>
                 <b>{selectedProfile.planesCount} chiếc</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="muted">Số đường bay đang bay:</span>
+              <div className="kv">
+                <span>Số đường bay đang bay:</span>
                 <b>{selectedProfile.routesCount} tuyến</b>
               </div>
-              {selectedProfile.reputation!==undefined&&<div style={{display:'flex',justifyContent:'space-between'}}><span className="muted">Danh tiếng:</span><b>{selectedProfile.reputation}/100 · {Math.max(1,Math.round(selectedProfile.reputation/20))} sao</b></div>}
+              {selectedProfile.reputation!==undefined&&<div className="kv"><span>Danh tiếng:</span><b>{selectedProfile.reputation}/100 · {Math.max(1,Math.round(selectedProfile.reputation/20))} sao</b></div>}
               {profileDetail && (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span className="muted">Thứ hạng:</span>
-                    <b>#{profileDetail.rank}/{profileDetail.total}</b>
+                  <div className="kv">
+                    <span>Thứ hạng:</span>
+                    <b className="tabular-nums">#{profileDetail.rank}/{profileDetail.total}</b>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span className="muted">Giao dịch:</span>
+                  <div className="kv">
+                    <span>Giao dịch:</span>
                     <b>{profileDetail.tradeStats.sold} bán · {profileDetail.tradeStats.bought} mua</b>
                   </div>
                   {profileDetail.tradeStats.volume > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span className="muted">Tổng khối lượng:</span>
+                    <div className="kv">
+                      <span>Tổng khối lượng:</span>
                       <b>{formatCurrency(profileDetail.tradeStats.volume, currency)}</b>
                     </div>
                   )}
@@ -508,7 +493,7 @@ function LeaderboardContent() {
                   <span className="muted">Huy chương:</span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                     {profileDetail.achievements.map((a) => (
-                      <span key={a.id} className="badge" style={{ fontSize: 11, cursor: 'help' }} title={a.detail}>
+                      <span key={a.id} className="badge" title={a.detail}>
                         {a.label}
                       </span>
                     ))}
