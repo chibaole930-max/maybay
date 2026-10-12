@@ -30,10 +30,13 @@ export async function listAirports(): Promise<SharedAirport[]> {
 
 /**
  * Them san bay moi. Tra ve san bay da tao, hoac ly do bi tu choi.
- * Viec doc-va-ghi nam trong `kvMutateJson` nen 2 request gan nhau khong ghi de nhau.
+ *
+ * Kiem tra trung ma va chen san bay nam trong **cung mot** `kvMutateJson`. Neu
+ * tach ra hai luot (kiem tra xong moi ghi) thi hai request gui cung luc deu qua
+ * duoc kiem tra va tao ra hai san bay trung ma.
  */
 export async function addAirport(draft: AirportDraft, createdBy: string): Promise<{ ok: true; airport: SharedAirport } | { ok: false; error: string }> {
-  const outcome = await kvMutateJson<Payload, { ok: true; airport: SharedAirport } | { ok: false; error: string }>(AIRPORTS_KEY, emptyPayload(), (raw) => {
+  return kvMutateJson<Payload, { ok: true; airport: SharedAirport } | { ok: false; error: string }>(AIRPORTS_KEY, emptyPayload(), (raw) => {
     const payload = normalize(raw);
     if (payload.airports.some((item) => item.code === draft.code)) {
       return { next: payload, result: { ok: false as const, error: `Ma san bay ${draft.code} da ton tai.` } };
@@ -47,15 +50,7 @@ export async function addAirport(draft: AirportDraft, createdBy: string): Promis
       createdAt: Date.now(),
       createdBy: createdBy.slice(0, 32),
     };
+    payload.airports.unshift(airport);
     return { next: payload, result: { ok: true as const, airport } };
   });
-
-  if (!outcome.ok) return outcome;
-  // Ghi lai ca kho mot lan nua de san bay moi duoc dua vao — `mutate` o tren chi kiem tra.
-  await kvMutateJson<Payload, void>(AIRPORTS_KEY, emptyPayload(), (raw) => {
-    const payload = normalize(raw);
-    payload.airports.unshift(outcome.airport);
-    return { next: payload, result: undefined };
-  });
-  return outcome;
 }

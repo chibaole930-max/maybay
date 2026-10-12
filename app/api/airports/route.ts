@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { addAirport, listAirports } from '@/lib/server/airportStore';
 import { draftAirport } from '@/lib/geo-naming';
 import { accountFromRequest } from '@/lib/server/session';
+import { clientIp, hit, rules } from '@/lib/server/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +48,16 @@ export async function POST(request: Request) {
   draft.demand = Math.round(clamp(body.demand, 1, 10, draft.demand));
 
   const session = await accountFromRequest(request);
-  const createdBy = clean(session?.account.name ?? body.createdBy, 'Khách vô danh', 32);
+  // Rate limit theo tai khoan neu da dang nhap, theo IP neu chua — nguoi chua
+  // dang nhap van tao duoc san bay (client goi o ca truong hop khong moi truoc).
+  const rate = await hit('airports', session?.pilot.id ?? clientIp(request), rules.write);
+  if (!rate.ok) {
+    return NextResponse.json({ error: `Bạn tạo sân bay hơi nhanh. Thử lại sau ${rate.retryAfter} giây.` }, { status: 429 });
+  }
+
+  // `createdBy` tu client la tuy chon — uu tien ten tai khoan da dang nhap de khong
+  // ai cung dat ten bat ky. Chi khi khach vang thi moi dung ten client gui.
+  const createdBy = session ? session.account.name : clean(body.createdBy, 'Khách vô danh', 32);
   const result = await addAirport(draft, createdBy);
 
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 409 });

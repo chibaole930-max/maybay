@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { leaderboard, updatePilotStats } from '@/lib/server/onlineStore';
 import { accountFromRequest } from '@/lib/server/session';
+import { hit, rules } from '@/lib/server/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,11 +27,18 @@ export async function POST(request: Request) {
   const session = await accountFromRequest(request);
   if (!session) return NextResponse.json({ error: 'Can dang nhap de luu tien do.' }, { status: 401 });
 
+  const rate = await hit('leaderboard', session.pilot.id, rules.stats);
+  if (!rate.ok) {
+    return NextResponse.json({ error: `Cap nhat qua nhieu lan. Thu lai sau ${rate.retryAfter} giay.` }, { status: 429 });
+  }
+
   let json: unknown;
   try { json = await request.json(); } catch { return NextResponse.json({ error: 'Du lieu khong hop le.' }, { status: 400 }); }
   const parsed = Heartbeat.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: 'Du lieu khong hop le.' }, { status: 400 });
 
-  await updatePilotStats(session.pilot.id, parsed.data);
-  return NextResponse.json({ ok: true, code: session.pilot.code });
+  const result = await updatePilotStats(session.pilot.id, parsed.data);
+  // `clamped` = server da chan cong khong cho client tu khai gia tri — client nen
+  // hien thi canh bao de nguoi choi hieu vi sao BXH khong tang.
+  return NextResponse.json({ ok: true, code: session.pilot.code, value: result.value, clamped: result.clamped });
 }

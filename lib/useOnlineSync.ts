@@ -27,6 +27,11 @@ export function useOnlineSync() {
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<SyncStatus>('idle');
   const [lastSavedAt, setLastSavedAt] = useState(0);
+  /**
+   * Server da cham han muc cong gia tri BXH. Chi so len day dung vao ti le
+   * chay choi thuc te, nen muc dung 30 phut la nhieu doi voi nguoi choi that.
+   */
+  const [creditLimited, setCreditLimited] = useState(false);
   const restored = useRef(false);
 
   const airline = useGameStore((s) => s.airline);
@@ -90,7 +95,7 @@ export function useOnlineSync() {
       if (stop) return;
       const state = useGameStore.getState();
       if (!state.airline) return;
-      await netClient.heartbeat({
+      const result = await netClient.heartbeat({
         name: state.airline.name,
         value: state.airline.cash,
         level: state.airline.level,
@@ -98,6 +103,9 @@ export function useOnlineSync() {
         routes: state.routes.length,
         reputation: state.airline.reputation ?? 70,
       });
+      // Server chan cong gia tri theo muc dung 30 phut — bao cho nguoi choi biet
+      // vi sao xep hang dung lai thay vi tu hien la tang.
+      if (result.clamped && !stop) setCreditLimited(true);
     };
 
     const saveTimer = setInterval(() => { if (!stop) void saveNow(); }, SAVE_MS);
@@ -122,5 +130,5 @@ export function useOnlineSync() {
     setAccount(null);
   }, []);
 
-  return { account, ready, status, lastSavedAt, login, register, logout, saveNow, restoreFromCloud: pullAndApply };
+  return { account, ready, status, lastSavedAt, creditLimited, login, register, logout, saveNow, restoreFromCloud: pullAndApply };
 }

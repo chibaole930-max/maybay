@@ -75,11 +75,20 @@ export const netClient = {
     } catch { return { ok: false, error: 'Không kết nối được máy chủ.' }; }
   },
 
-  async heartbeat(input: { name?: string; value: number; level: number; planes: number; routes: number; reputation: number }): Promise<boolean> {
-    return safe(async () => {
+  /**
+   * Bao lenh chi so len BXH.
+   * Server cham muc cong gia tri moi 30 phut, nen se co luc client bao nhieu hon
+   * thuc te — `clamped` cho biet nhan vay de hien thi canh bao thay vi im lang.
+   */
+  async heartbeat(input: { name?: string; value: number; level: number; planes: number; routes: number; reputation: number }): Promise<{ ok: boolean; clamped: boolean; value?: number }> {
+    try {
       const r = await fetch('/api/leaderboard', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(input) });
-      return r.ok;
-    }, false);
+      if (!r.ok) return { ok: false, clamped: false };
+      const json = (await r.json().catch(() => ({}))) as { clamped?: boolean; value?: number };
+      return { ok: true, clamped: Boolean(json.clamped), value: json.value };
+    } catch {
+      return { ok: false, clamped: false };
+    }
   },
 
   async pushSave(state: unknown): Promise<number> {
@@ -128,13 +137,24 @@ export const netClient = {
   },
 
   async sendChat(_room: string, message: string) {
-    const live = await safe(async () => {
+    try {
       const r = await fetch('/api/community?kind=chat', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ message }) });
-      if (!r.ok) throw new Error('chat failed');
-      return (await r.json()) as { message: { id: string; sender: string; message: string; at: number } };
-    }, null as unknown as { message: { id: string; sender: string; message: string; at: number } });
-    if (live?.message) return { id: live.message.id, message: live.message.message, at: live.message.at, sender: live.message.sender };
-    return { id: 'mock-' + Date.now(), message, at: Date.now(), sender: 'Hãng của bạn' };
+      if (r.status === 401) throw new Error('Cần đăng nhập để chat.');
+      if (!r.ok) {
+        const j = (await r.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error || 'Gửi tin nhắn thất bại.');
+      }
+      const json = (await r.json()) as { message: { id: string; sender: string; message: string; at: number } };
+      return json.message;
+    } catch (err) {
+      // Chi lui ve tin nhan gia khi that su khong noi duoc may chu (loi mang).
+      // Server tra 401/429 la loi that cua nguoi choi — phai nem loi ra de UI hien thi,
+      // giu im lang se khiến tin nhắn bi "gửi xong" rồi bay lai trong may.
+      if (err instanceof TypeError) {
+        return { id: 'mock-' + Date.now(), message, at: Date.now(), sender: 'Hãng của bạn' };
+      }
+      throw err;
+    }
   },
 
   async getChat(since = 0) {
@@ -169,11 +189,12 @@ export const netClient = {
     return { name: 'Liên minh Mây Trắng', members: 7, capacity: 10, contribution: 1240 };
   },
 
-  async joinAlliance(): Promise<boolean> {
-    return safe(async () => {
-      const r = await fetch('/api/community?kind=alliance', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ join: true }) });
-      return r.ok;
-    }, false);
+  /** Tham gia lien minh. Nem loi khi server tu choi (da day, sai quyen, qua tan suat). */
+  async joinAlliance(): Promise<{ ok: true; members: number }> {
+    const r = await fetch('/api/community?kind=alliance', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ join: true }) });
+    const json = (await r.json().catch(() => ({}))) as { members?: number; error?: string };
+    if (!r.ok) throw new Error(json.error || 'Tham gia liên minh thất bại.');
+    return { ok: true, members: json.members ?? 0 };
   },
 
   async getUsedMarket(): Promise<UsedPlaneListing[]> {
@@ -186,19 +207,27 @@ export const netClient = {
     return [{ id: 'used-1', model: 'Airbus A320neo', wear: 22, price: 9800000, seller: 'VietSky' }, { id: 'used-2', model: 'ATR 72-600', wear: 11, price: 2650000, seller: 'Saigon Air' }];
   },
 
-  async sellPlane(model: string, wear: number, price: number) {
-    return safe(async () => {
+  async sellPlane(model: string, wear: number, price: number): Promise<{ ok: boolean; error?: string }> {
+    try {
       const r = await fetch('/api/market', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ model, wear, price }) });
-      return r.ok;
-    }, false);
+      const json = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) return { ok: false, error: json.error || 'Đăng tin rao thất bại.' };
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Không kết nối được máy chủ.' };
+    }
   },
 
-  async buyListing(id: string) {
-    return safe(async () => {
+  /** Mua tin rao. Server se **tru tien** — client can biet truoc de khong hien may bay ma chua tien. */
+  async buyListing(id: string): Promise<{ ok: boolean; error?: string }> {
+    try {
       const r = await fetch('/api/market', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ buyId: id }) });
-      if (!r.ok) { const j = (await r.json().catch(() => ({}))) as { error?: string }; throw new Error(j.error || 'Mua thất bại'); }
+      const json = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) return { ok: false, error: json.error || 'Mua thất bại.' };
       return { ok: true };
-    }, { ok: false });
+    } catch {
+      return { ok: false, error: 'Không kết nối được máy chủ.' };
+    }
   },
 };
 

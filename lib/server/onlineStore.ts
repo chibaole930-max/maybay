@@ -1,6 +1,6 @@
 import { randomUUID, randomBytes } from 'node:crypto';
-import { kvGetJson, kvGetJsonEx, kvMutateJson, kvSetJson, kvSetJsonEx, kvSetJsonNx, kvDel, storageMode } from './kv';
-import { hashPassword, verifyPassword } from './password';
+import { kvGetJson, kvGetJsonEx, kvMutateJson, kvSetJsonEx, kvSetJsonNx, kvDel, storageMode } from './kv';
+import { hashPassword, verifyPassword, checkPassword, checkUsername, checkDisplayName, normalizeUsername, normalizeDisplayName } from './password';
 
 /**
  * DB online cho moi tinh nang nhieu nguoi choi: BXH, cho may bay cu, lien minh, chat, dau gia.
@@ -21,6 +21,16 @@ const USERNAME_KEY = (username: string) => `vat:uname:${username}`;
 
 const SESSION_TTL_SECONDS = 30 * 86400; // 30 ngay
 
+/**
+ * Gioi han so mau moi giu lai. `vat:db` la MOT key duy nhat chua toan bo database,
+ * nen Upstash Redis (tran ~1MB/key) se no khi danh sach phinh khong doi.
+ * Thua duoc cat bo cac ban ghi da ban / het han truoc khi ghi lai.
+ */
+const MAX_LISTINGS = 60;
+const MAX_SOLD_LISTINGS = 20;
+const MAX_MEMBERS = 200;
+const MAX_CHAT = 200;
+
 export interface Pilot {
   id: string;
   /** Ma hang bay hien thi cong khai (dung trong BXH, chat, cho). */
@@ -37,11 +47,33 @@ export interface Pilot {
   salt?: string;
   hash?: string;
   createdAt?: number;
+  /**
+   * Token phien cap nhat moi khi doi mat khau. Session luu luu `epoch` luc tao;
+   * doi mat khau tang gia tri nay nen moi phien cu bi bo — khong con phien nao
+   * cua nguoi gap quyen truy cap duoc sau khi doi mat khau.
+   */
+  authEpoch?: number;
+  /** So lan doi mat khau — dung de chan gia suy doan. */
+  passwordChangedAt?: number;
+  /** Cho phep client tang gia tri BXH toi da bao nhieu lan trong mot khoang thoi gian. */
+  creditUsed?: number;
+  creditWindowAt?: number;
 }
 
-export interface Listing { id: string; model: string; wear: number; price: number; seller: string; sellerId: string; createdAt: number; sold?: boolean; }
+export interface Listing {
+  id: string; model: string; wear: number; price: number;
+  seller: string; sellerId: string; createdAt: number;
+  sold?: boolean;
+  /** Luu lai khi ban xong de hien thi lich su giao dich. */
+  buyerId?: string;
+  soldAt?: number;
+}
 export interface Alliance { id: string; name: string; capacity: number; contribution: number; createdAt: number; }
-export interface ChatMsg { id: string; room: string; sender: string; message: string; at: number; }
+export interface ChatMsg {
+  id: string; room: string; sender: string; message: string; at: number;
+  /** Dung de rate limit theo nguoi gui — khong tien cho viec xem `sender`. */
+  senderId?: string;
+}
 export interface SlotAuction { id: string; airport: string; price: number; bidder: string; endsAt: number; }
 
 interface DB {
@@ -109,9 +141,11 @@ export type PublicPilot = ReturnType<typeof publicPilot>;
 const newSessionToken = () => randomBytes(32).toString('base64url');
 
 /** Mo phien dang nhap: tra token, luu vao KV kem han 30 ngay. */
-export async function createSession(pilotId: string): Promise<string> {
+export async function createSession(pilotId: string, epoch = 0): Promise<string> {
   const token = newSessionToken();
-  await kvSetJsonEx(SESSION_KEY(token), { pilotId, createdAt: Date.now() }, SESSION_TTL_SECONDS);
+  // Luu `epoch` cua tai khoan luc mo phien. Doi mat khau tang epoch nen phien cu
+  // (ke ca token bi gui lai) se khong con khop o buoc `resolveSession`.
+  await kvSetJsonEx(SESSION_KEY(token), { pilotId, epoch, createdAt: Date.now() }, SESSION_TTL_SECONDS);
   return token;
 }
 
@@ -119,13 +153,20 @@ export async function destroySession(token: string): Promise<void> {
   if (token) await kvDel(SESSION_KEY(token));
 }
 
-/** Token -> tai khoan. Tra `null` neu phien het han / khong ton tai. */
+/**
+ * Token -> tai khoan. Tra `null` neu phien het han / khong ton tai / da bi thu hoi
+ * (sau khi doi mat khau).
+ */
 export async function resolveSession(token: string): Promise<Pilot | null> {
   if (!token) return null;
-  const session = await kvGetJsonEx<{ pilotId?: string } | null>(SESSION_KEY(token), null);
+  const session = await kvGetJsonEx<{ pilotId?: string; epoch?: number } | null>(SESSION_KEY(token), null);
   if (!session?.pilotId) return null;
   const db = await readDB();
-  return db.pilots.find((p) => p.id === session.pilotId) ?? null;
+  const pilot = db.pilots.find((p) => p.id === session.pilotId);
+  if (!pilot) return null;
+  // Phien cap truoc lan doi mat khau gan nhat -> da bi thu hoi.
+  if ((session.epoch ?? 0) !== (pilot.authEpoch ?? 0)) return null;
+  return pilot;
 }
 
 export type RegisterResult =
@@ -134,28 +175,24 @@ export type RegisterResult =
 
 /** Dang ky tai khoan that: ten dang nhap + mat khau + ten hang bay. */
 export async function registerAccount(input: { username: string; password: string; name: string }): Promise<RegisterResult> {
-  const username = String(input.username || '').trim().toLowerCase();
-  const name = String(input.name || '').trim().replace(/\s+/g, ' ');
+  // Dung ham kiem tra trong `password.ts` de hieu luc dang ky va doi mat khau
+  // luon cung mot bo luat — truoc day hai noi tu viet rieng va da lech nhau.
+  const username = normalizeUsername(input.username);
+  const name = normalizeDisplayName(input.name);
 
-  if (!/^[a-z0-9._-]{3,20}$/.test(username)) {
-    return { ok: false, error: 'Ten dang nhap chi gom chu thuong, so, dau . _ - (3-20 ky tu).', field: 'username' };
-  }
-  if (String(input.password || '').length < 6) {
-    return { ok: false, error: 'Mat khau can toi thieu 6 ky tu.', field: 'password' };
-  }
-  if (String(input.password || '').length > 72) {
-    return { ok: false, error: 'Mat khau toi da 72 ky tu.', field: 'password' };
-  }
-  if (name.length < 3 || name.length > 32) {
-    return { ok: false, error: 'Ten hang bay can tu 3 den 32 ky tu.', field: 'name' };
-  }
+  const usernameError = checkUsername(username);
+  if (usernameError) return { ok: false, error: usernameError, field: 'username' };
+  const passwordError = checkPassword(String(input.password || ''));
+  if (passwordError) return { ok: false, error: passwordError, field: 'password' };
+  const nameError = checkDisplayName(name);
+  if (nameError) return { ok: false, error: nameError, field: 'name' };
 
   // Giu cho ten dang nhap truoc — atomic, 2 nguoi cung ten chi 1 nguoi vao duoc.
   const pilotId = randomUUID();
   const reserved = await kvSetJsonNx(USERNAME_KEY(username), pilotId);
   if (!reserved) return { ok: false, error: 'Ten dang nhap da co nguoi dung. Chon ten khac nhe.', field: 'username' };
 
-  const { salt, hash } = hashPassword(String(input.password));
+  const { salt, hash } = await hashPassword(String(input.password));
   const code = `VNA${randomBytes(2).toString('hex').toUpperCase().slice(0, 4)}`;
   const pilot: Pilot = {
     id: pilotId, code, name, value: 0, level: 1, planes: 0, routes: 0, reputation: 70,
@@ -174,7 +211,7 @@ export async function registerAccount(input: { username: string; password: strin
     throw err;
   }
 
-  const token = await createSession(pilot.id);
+  const token = await createSession(pilot.id, pilot.authEpoch ?? 0);
   return { ok: true, pilot, token };
 }
 
@@ -183,7 +220,7 @@ export type LoginResult =
   | { ok: false; error: string; field?: 'username' | 'password' };
 
 export async function loginWithPassword(input: { username: string; password: string }): Promise<LoginResult> {
-  const username = String(input.username || '').trim().toLowerCase();
+  const username = normalizeUsername(input.username);
   const password = String(input.password || '');
   if (!username) return { ok: false, error: 'Nhap ten dang nhap.', field: 'username' };
   if (!password) return { ok: false, error: 'Nhap mat khau.', field: 'password' };
@@ -193,42 +230,103 @@ export async function loginWithPassword(input: { username: string; password: str
   // Cung mot thong bao cho ca "khong co tai khoan" va "sai mat khau" de khong lo
   // bi nguoi khac do xem ten dang nhap nao ton tai.
   if (!pilot || !pilot.username) return { ok: false, error: 'Ten dang nhap hoac mat khau khong dung.', field: 'password' };
-  if (!pilot.salt || !pilot.hash || !verifyPassword(password, pilot.salt, pilot.hash)) {
+  if (!pilot.salt || !pilot.hash || !(await verifyPassword(password, pilot.salt, pilot.hash))) {
     return { ok: false, error: 'Ten dang nhap hoac mat khau khong dung.', field: 'password' };
   }
-  const token = await createSession(pilot.id);
+  const token = await createSession(pilot.id, pilot.authEpoch ?? 0);
   return { ok: true, pilot, token };
 }
 
-export async function changePassword(pilot: Pilot, current: string, next: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!pilot.salt || !pilot.hash || !verifyPassword(current, pilot.salt, pilot.hash)) {
+/**
+ * Doi mat khau. Tang `authEpoch` nen **moi phien dang nhap cu cua tai khoan deu
+ * mat hieu luc**, ke ca tren may khac — neu khong, nguoi bi chiem cookie van
+ * vao duoc game sau khi chu the doi mat khau.
+ */
+export async function changePassword(pilot: Pilot, current: string, next: string): Promise<{ ok: true; sessionEpoch: number } | { ok: false; error: string }> {
+  if (!pilot.salt || !pilot.hash || !(await verifyPassword(String(current || ''), pilot.salt, pilot.hash))) {
     return { ok: false, error: 'Mat khau hien tai khong dung.' };
   }
-  if (next.length < 6) return { ok: false, error: 'Mat khau moi can toi thieu 6 ky tu.' };
-  const { salt, hash } = hashPassword(next);
-  await kvMutateJson<DB, void>(DB_KEY, freshDB(), (raw) => {
+  const problem = checkPassword(String(next || ''));
+  if (problem) return { ok: false, error: problem };
+  if (next === current) return { ok: false, error: 'Mat khau moi phai khac mat khau hien tai.' };
+
+  const { salt, hash } = await hashPassword(next);
+  const epoch = await kvMutateJson<DB, number>(DB_KEY, freshDB(), (raw) => {
     const db = normalize(raw);
     const target = db.pilots.find((p) => p.id === pilot.id);
-    if (target) { target.salt = salt; target.hash = hash; }
-    return { next: db, result: undefined };
+    if (!target) return { next: db, result: 0 };
+    target.salt = salt;
+    target.hash = hash;
+    target.authEpoch = (target.authEpoch ?? 0) + 1;
+    target.passwordChangedAt = Date.now();
+    return { next: db, result: target.authEpoch };
   });
-  return { ok: true };
+  return { ok: true, sessionEpoch: epoch };
+}
+
+/**
+ * Chan client tu khai gia tri BXH.
+ *
+ * Server khong chay game engine nen khong biet nguoi choi "chay" bao lau, nen
+ * dung han muc **theo ti le** tren tai san hien tai: trong 30 phut, gia tri duoc
+ * cong toi da bang chinh no.
+ *
+ * - `TIME_SCALE = 60` nen 1 gio thuc = 60 gio game, nguoi choi thon nhat co tho
+ *   nhieu hon 100% tai san moi 30 phut — muc nay khong can canh.
+ * - Do la nguoi sua `value` trong DevTools hoac goi thang API se khong lo len
+ *   duoc; muon tang phai cham theo muc, tuc ton thoi gian that.
+ *
+ * Gia tri **gia tang** moi bi chiem. Client bao nho hon cap (do mua may bay, chi
+ * phi) thi giu nguyen gia tri server da cong — dung nghia "gia tri lon nhat da
+ * dat duoc" va tranh viec mua may bay lam ho so diem.
+ */
+const CREDIT_WINDOW_MS = 30 * 60 * 1000;
+const CREDIT_BASE = 2_000_000;
+const CREDIT_RATIO = 1;
+
+/** Han muc cong duoc trong khoang hien tai, tinh tren tai san hien co. */
+export function creditAllowance(value: number, level: number): number {
+  // Cap do chi nhan them mot phan nho — muc tang chinh den tu tai san, de tai khoan
+  // cap cao khong vuot duoc tai khoan lon hon chi bang cach leo cap.
+  return Math.round((CREDIT_BASE + value * CREDIT_RATIO) * (1 + Math.max(0, level - 1) * 0.02));
+}
+
+export interface PilotStatsResult {
+  /** Gia tri BXH server chap nhan (da cham kien han muc cong). */
+  value: number;
+  /** Client bao nhieu ma bi chan — client nen biet de hien thi canh bao. */
+  clamped: boolean;
 }
 
 /** Cap nhat BXH cho tai khoan dang dang nhap. */
-export async function updatePilotStats(pilotId: string, input: { name?: string; value: number; level: number; planes: number; routes: number; reputation: number }): Promise<void> {
-  await kvMutateJson<DB, void>(DB_KEY, freshDB(), (raw) => {
+export async function updatePilotStats(pilotId: string, input: { name?: string; value: number; level: number; planes: number; routes: number; reputation: number }): Promise<PilotStatsResult> {
+  const now = Date.now();
+  return kvMutateJson<DB, PilotStatsResult>(DB_KEY, freshDB(), (raw) => {
     const db = normalize(raw);
     const target = db.pilots.find((p) => p.id === pilotId);
-    if (!target) return { next: db, result: undefined };
-    if (input.name) target.name = input.name.slice(0, 32);
-    target.value = Math.max(0, Math.min(1e13, input.value));
+    if (!target) return { next: db, result: { value: 0, clamped: false } };
+
+    if (input.name) target.name = checkDisplayName(input.name) ? target.name : normalizeDisplayName(input.name);
+
+    const claimed = Math.max(0, Math.min(1e13, input.value));
+    // Reset so da khi sang khoang moi.
+    if (now - (target.creditWindowAt ?? 0) > CREDIT_WINDOW_MS) {
+      target.creditWindowAt = now;
+      target.creditUsed = 0;
+    }
+    const used = target.creditUsed ?? 0;
+    const allowance = creditAllowance(target.value, target.level);
+    const growth = Math.max(0, claimed - target.value);
+    const accepted = Math.min(growth, Math.max(0, allowance - used));
+    target.value = Math.min(1e13, target.value + accepted);
+    target.creditUsed = used + accepted;
+
     target.level = Math.max(1, Math.min(100, input.level));
     target.planes = Math.max(0, Math.min(500, input.planes));
     target.routes = Math.max(0, Math.min(200, input.routes));
     target.reputation = Math.max(0, Math.min(100, input.reputation));
-    target.updatedAt = Date.now();
-    return { next: db, result: undefined };
+    target.updatedAt = now;
+    return { next: db, result: { value: target.value, clamped: target.value < claimed } };
   });
 }
 
@@ -237,25 +335,53 @@ export async function leaderboard(limit = 50): Promise<Pilot[]> {
   return [...db.pilots].sort((a, b) => b.value - a.value).slice(0, limit);
 }
 
+/**
+ * Cat danh sach tin rao cho khop gioi han.
+ * `vat:db` la mot key duy nhat, Upstash Redis tran ~1MB/key — tin rao giu lai vo
+ * han se lam no loai cac ban ghi khac (ca danh sach pilot). Chi giu tin dang ban
+ * va mot so tin da ban gan nhat.
+ */
+function pruneListings(listings: Listing[]): Listing[] {
+  const open = listings.filter((l) => !l.sold);
+  const sold = listings.filter((l) => l.sold).slice(0, MAX_SOLD_LISTINGS);
+  return [...open.slice(0, MAX_LISTINGS), ...sold];
+}
+
 export async function listMarket(): Promise<Listing[]> {
   const db = await readDB();
   return db.listings.filter((l) => !l.sold).sort((a, b) => b.createdAt - a.createdAt).slice(0, 30);
 }
 
-export async function postListing(seller: Pilot, model: string, wear: number, price: number): Promise<Listing> {
-  const listing: Listing = {
-    id: randomUUID(), model: model.slice(0, 40),
-    wear: Math.max(0, Math.min(100, Math.round(wear))), price: Math.max(100000, Math.round(price)),
-    seller: seller.name.slice(0, 32), sellerId: seller.id, createdAt: Date.now(),
-  };
-  await kvMutateJson<DB, void>(DB_KEY, freshDB(), (raw) => {
+export type SellResult = { ok: true; listing: Listing } | { ok: false; error: string };
+
+export async function postListing(seller: Pilot, model: string, wear: number, price: number): Promise<SellResult> {
+  const cleanModel = String(model || '').trim().slice(0, 40);
+  if (cleanModel.length < 2) return { ok: false, error: 'Ten may bay qua ngan.' };
+
+  return kvMutateJson<DB, SellResult>(DB_KEY, freshDB(), (raw) => {
     const db = normalize(raw);
+    const open = db.listings.filter((l) => !l.sold).length;
+    if (open >= MAX_LISTINGS) return { next: db, result: { ok: false as const, error: 'Cho may bay da day. Ban het so may bay cua ban truoc.' } };
+    // Mot nguoi khong duoc nho gap de lam chan giao dich.
+    if (db.listings.filter((l) => !l.sold && l.sellerId === seller.id).length >= 5) {
+      return { next: db, result: { ok: false as const, error: 'Ban da co 5 tin dang ban. Chi mot tin moi moi duoc dang.' } };
+    }
+    const listing: Listing = {
+      id: randomUUID(), model: cleanModel,
+      wear: Math.max(0, Math.min(100, Math.round(wear))), price: Math.max(100000, Math.round(price)),
+      seller: seller.name.slice(0, 32), sellerId: seller.id, createdAt: Date.now(),
+    };
     db.listings.unshift(listing);
-    return { next: db, result: undefined };
+    db.listings = pruneListings(db.listings);
+    return { next: db, result: { ok: true as const, listing } };
   });
-  return listing;
 }
 
+/**
+ * Mua tin rao. **Chuyen tien that** trong cung mot luot ghi: tru gia tien cua
+ * nguoi mua va cong vao tai khoan nguoi ban. Truoc day chi gan co `sold` nen
+ * may bay den tay nguoi mua mien phi.
+ */
 export async function buyListing(buyer: Pilot, id: string): Promise<{ ok: true; listing: Listing } | { ok: false; error: string }> {
   return kvMutateJson<DB, { ok: true; listing: Listing } | { ok: false; error: string }>(DB_KEY, freshDB(), (raw) => {
     const db = normalize(raw);
@@ -266,7 +392,19 @@ export async function buyListing(buyer: Pilot, id: string): Promise<{ ok: true; 
     if (listing.sellerId === buyer.id) {
       return { next: db, result: { ok: false as const, error: 'Khong the mua chinh may bay cua minh.' } };
     }
+    const buyerRow = db.pilots.find((p) => p.id === buyer.id);
+    if (!buyerRow) return { next: db, result: { ok: false as const, error: 'Tai khoan khong con ton tai.' } };
+    if (buyerRow.value < listing.price) {
+      return { next: db, result: { ok: false as const, error: 'Khong du tien mua may bay nay.' } };
+    }
+    buyerRow.value -= listing.price;
+    const sellerRow = db.pilots.find((p) => p.id === listing.sellerId);
+    if (sellerRow) sellerRow.value += listing.price;
+
     listing.sold = true;
+    listing.buyerId = buyer.id;
+    listing.soldAt = Date.now();
+    db.listings = pruneListings(db.listings);
     return { next: db, result: { ok: true as const, listing } };
   });
 }
@@ -278,31 +416,57 @@ export async function getAlliance(): Promise<{ alliance: Alliance | null; member
   return { alliance, members };
 }
 
-export async function joinAlliance(pilot: Pilot): Promise<number> {
-  return kvMutateJson<DB, number>(DB_KEY, freshDB(), (raw) => {
+export async function joinAlliance(pilot: Pilot): Promise<{ ok: true; members: number } | { ok: false; error: string }> {
+  return kvMutateJson<DB, { ok: true; members: number } | { ok: false; error: string }>(DB_KEY, freshDB(), (raw) => {
     const db = normalize(raw);
     let alliance = db.alliances[0];
     if (!alliance) {
       alliance = { id: randomUUID(), name: 'Lien minh May Trang', capacity: 50, contribution: 0, createdAt: Date.now() };
       db.alliances.push(alliance);
     }
+    const count = db.members.filter((m) => m.allianceId === alliance!.id).length;
+    if (count >= alliance.capacity) {
+      return { next: db, result: { ok: false as const, error: 'Lien minh da day.' } };
+    }
     if (!db.members.some((m) => m.allianceId === alliance!.id && m.pilotId === pilot.id)) {
       db.members.push({ allianceId: alliance.id, pilotId: pilot.id });
       alliance.contribution += 10;
     }
-    return { next: db, result: db.members.filter((m) => m.allianceId === alliance!.id).length };
+    if (db.members.length > MAX_MEMBERS) db.members = db.members.slice(-MAX_MEMBERS);
+    return { next: db, result: { ok: true as const, members: db.members.filter((m) => m.allianceId === alliance!.id).length } };
   });
 }
 
-export async function postChat(sender: string, message: string, room = 'lien-minh'): Promise<ChatMsg> {
-  const msg: ChatMsg = { id: randomUUID(), room, sender: sender.slice(0, 32), message: message.slice(0, 200), at: Date.now() };
-  await kvMutateJson<DB, void>(DB_KEY, freshDB(), (raw) => {
+const CHAT_MAX_LENGTH = 200;
+
+/**
+ * So tin moi duoc gui trong MOT KHOANG (10 giay).
+ * Chat chi giu 200 tin nen mot nguoi spam se xoa sach tin cua ca server —
+ * rate limit la thu gian nhat de chan.
+ */
+const CHAT_WINDOW_MS = 10_000;
+const CHAT_PER_WINDOW = 4;
+
+export async function postChat(sender: Pilot, message: string, room = 'lien-minh'): Promise<{ ok: true; message: ChatMsg } | { ok: false; error: string }> {
+  const text = String(message || '').trim();
+  if (!text) return { ok: false, error: 'Tin nhan rong.' };
+  if (text.length > CHAT_MAX_LENGTH) return { ok: false, error: `Tin nhan toi da ${CHAT_MAX_LENGTH} ky tu.` };
+
+  return kvMutateJson<DB, { ok: true; message: ChatMsg } | { ok: false; error: string }>(DB_KEY, freshDB(), (raw) => {
     const db = normalize(raw);
+    const now = Date.now();
+    const recent = db.chat.filter((m) => m.senderId === sender.id && now - m.at < CHAT_WINDOW_MS);
+    if (recent.length >= CHAT_PER_WINDOW) {
+      return { next: db, result: { ok: false as const, error: 'Ban gui qua nhieu tin. Cho vai giay roi thu lai.' } };
+    }
+    const msg: ChatMsg = {
+      id: randomUUID(), room, sender: sender.name.slice(0, 32), senderId: sender.id,
+      message: text.slice(0, CHAT_MAX_LENGTH), at: now,
+    };
     db.chat.push(msg);
-    db.chat = db.chat.slice(-200);
-    return { next: db, result: undefined };
+    db.chat = db.chat.slice(-MAX_CHAT);
+    return { next: db, result: { ok: true as const, message: msg } };
   });
-  return msg;
 }
 
 export async function getChat(since = 0, room = 'lien-minh'): Promise<ChatMsg[]> {
@@ -320,11 +484,16 @@ export async function getSeason(): Promise<{ id: string; endsAt: number; ranks: 
 /** Luu / doc tien do game dang nhap, de chuyen tiep giua cac thiet bi. */
 export interface CloudSave { state: unknown; updatedAt: number; version: number }
 
+/**
+ * Luu tien do. Doc va tang `version` trong cung mot luot ghi (`kvMutateJson`) —
+ * truoc day doc roi moi ghi, nen hai tab luu cung luc se lam `version` bi
+ * trung/giam va client khong con biet ban nao moi hon.
+ */
 export async function putCloudSave(pilotId: string, state: unknown): Promise<CloudSave> {
-  const previous = await kvGetJson<CloudSave | null>(SAVE_KEY(pilotId), null);
-  const save: CloudSave = { state, updatedAt: Date.now(), version: (previous?.version ?? 0) + 1 };
-  await kvSetJson(SAVE_KEY(pilotId), save);
-  return save;
+  return kvMutateJson<CloudSave | null, CloudSave>(SAVE_KEY(pilotId), null, (previous) => {
+    const save: CloudSave = { state, updatedAt: Date.now(), version: (previous?.version ?? 0) + 1 };
+    return { next: save, result: save };
+  });
 }
 
 export async function getCloudSave(pilotId: string): Promise<CloudSave | null> {

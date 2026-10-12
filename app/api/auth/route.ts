@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { changePassword, loginWithPassword, registerAccount } from '@/lib/server/onlineStore';
+import { changePassword, createSession, loginWithPassword, registerAccount } from '@/lib/server/onlineStore';
 import { accountFromRequest, clearCookieHeader, logoutRequest, sessionCookieHeader } from '@/lib/server/session';
 import { StorageUnavailableError } from '@/lib/server/kv';
+import { clientIp, hit, rules } from '@/lib/server/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,16 @@ function failure(error: unknown, fallback: string) {
   }
   console.error('[auth]', error);
   return NextResponse.json({ error: fallback }, { status: 500 });
+}
+
+/** 429 khi vuot han muc — kem `Retry-After` de client biet cho bao lau. */
+async function guard(request: Request, name: string, rule: { limit: number; windowSeconds: number }) {
+  const rate = await hit(name, clientIp(request), rule);
+  if (rate.ok) return null;
+  return NextResponse.json(
+    { error: `Qua nhieu lan thu. Thu lai sau ${rate.retryAfter} giay.` },
+    { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } },
+  );
 }
 
 export async function GET(request: Request) {
@@ -57,16 +68,22 @@ export async function POST(request: Request) {
   if (action === 'change-password') {
     const session = await accountFromRequest(request);
     if (!session) return NextResponse.json({ error: 'Can dang nhap.' }, { status: 401 });
+    const blocked = await guard(request, 'change-password', rules.changePassword);
+    if (blocked) return blocked;
     try {
       const result = await changePassword(session.pilot, String(json.current || ''), String(json.next || ''));
       if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
-      return NextResponse.json({ ok: true });
+      // Moi phien cu vua bi bo hieu luc — cap cookie moi cho phien hien tai.
+      const fresh = await createSession(session.pilot.id, result.sessionEpoch);
+      return NextResponse.json({ ok: true }, { headers: { 'Set-Cookie': sessionCookieHeader(request, fresh) } });
     } catch (error) {
       return failure(error, 'Doi mat khau that bai do loi may chu.');
     }
   }
 
   if (action === 'register') {
+    const blocked = await guard(request, 'register', rules.register);
+    if (blocked) return blocked;
     try {
       const result = await registerAccount({
         username: String(json.username || ''),
@@ -83,6 +100,8 @@ export async function POST(request: Request) {
     }
   }
 
+  const blockedLogin = await guard(request, 'login', rules.login);
+  if (blockedLogin) return blockedLogin;
   try {
     const result = await loginWithPassword({
       username: String(json.username || ''),

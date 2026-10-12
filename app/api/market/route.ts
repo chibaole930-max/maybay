@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { buyListing, listMarket, postListing } from '@/lib/server/onlineStore';
 import { accountFromRequest } from '@/lib/server/session';
+import { hit, rules } from '@/lib/server/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,11 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: 'Can dang nhap de giao dich.' }, { status: 401 });
   const { pilot } = session;
 
+  const rate = await hit('market', pilot.id, rules.write);
+  if (!rate.ok) {
+    return NextResponse.json({ error: `Qua nhieu lan giao dich. Thu lai sau ${rate.retryAfter} giay.` }, { status: 429 });
+  }
+
   let json: unknown;
   try { json = await request.json(); } catch { return NextResponse.json({ error: 'Du lieu khong hop le.' }, { status: 400 }); }
 
@@ -36,6 +42,7 @@ export async function POST(request: Request) {
 
   const parsed = Sell.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: 'Tin rao ban khong hop le.' }, { status: 400 });
-  const listing = await postListing(pilot, parsed.data.model, parsed.data.wear, parsed.data.price);
-  return NextResponse.json({ listing }, { status: 201 });
+  const result = await postListing(pilot, parsed.data.model, parsed.data.wear, parsed.data.price);
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: 409 });
+  return NextResponse.json({ listing: result.listing }, { status: 201 });
 }

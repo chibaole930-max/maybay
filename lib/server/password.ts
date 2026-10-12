@@ -1,8 +1,12 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 
 /**
  * Hash mat khau bang scrypt (co san trong Node, khong can them dependency native).
  * Moi lan dang ky sinh salt rieng, nen 2 nguoi cung mat khau van ra hash khac nhau.
+ *
+ * CHI dung ham async. `scrypt` mac dinh ton mot luong CPU ~100ms; ban `sync` se
+ * chan toan bo event loop cua process, nen mot lo danh nhap sai mat khau gui
+ * song song la du de lam treo server cho moi nguoi khac.
  */
 
 const KEYLEN = 64;
@@ -10,28 +14,40 @@ const MAX_PASSWORD = 72; // scrypt khong doc qua 72 ky tu
 
 export type PasswordRecord = { salt: string; hash: string };
 
-export function hashPassword(password: string): PasswordRecord {
+/** `scrypt` bao loi neu tham so sai — bo qua loi, tra null de caller xu ly. */
+const scryptAsync = (password: string, salt: string): Promise<Buffer> =>
+  new Promise((resolve, reject) => {
+    scrypt(password, salt, KEYLEN, (err, key) => (err ? reject(err) : resolve(key)));
+  });
+
+export async function hashPassword(password: string): Promise<PasswordRecord> {
   const salt = randomBytes(16).toString('hex');
-  const hash = scryptSync(password, salt, KEYLEN).toString('hex');
+  const hash = (await scryptAsync(password, salt)).toString('hex');
   return { salt, hash };
 }
 
-export function verifyPassword(password: string, salt: string, hash: string): boolean {
+export async function verifyPassword(password: string, salt: string, hash: string): Promise<boolean> {
   if (!salt || !hash) return false;
-  let expected: Buffer;
+  if (typeof password !== 'string' || password.length > MAX_PASSWORD) return false;
+  const expected = Buffer.from(hash, 'hex');
+  if (expected.length !== KEYLEN) return false;
+  let actual: Buffer;
   try {
-    expected = Buffer.from(hash, 'hex');
+    actual = await scryptAsync(password, salt);
   } catch {
     return false;
   }
-  if (expected.length !== KEYLEN) return false;
   // timingSafeEqual chan tan cong do thoi gian: so sanh trong thoi gian khong doi
   // du mat khau dung o ky tu thu may.
-  const actual = scryptSync(password, salt, KEYLEN);
   return timingSafeEqual(actual, expected);
 }
 
-/** Tra ve chuoi loi, hoac `null` neu hop le. */
+/**
+ * Tra ve chuoi loi, hoac `null` neu hop le.
+ * Day la nguon su that duy nhat cho luật mat khau — `registerAccount` va
+ * `changePassword` deu goi ham nay nen khong the xay ra tinh trang hai noi
+ * cho phep cac gioi han khac nhau.
+ */
 export function checkPassword(password: string): string | null {
   if (typeof password !== 'string' || password.length < 6) return 'Mat khau can toi thieu 6 ky tu.';
   if (password.length > MAX_PASSWORD) return `Mat khau toi da ${MAX_PASSWORD} ky tu.`;
@@ -55,8 +71,11 @@ export function checkUsername(raw: string): string | null {
 
 /** Ten hien thi (ten hang bay): chua chan khoang trang du thua. */
 export function checkDisplayName(raw: string): string | null {
-  const name = String(raw || '').trim().replace(/\s+/g, ' ');
+  const name = normalizeDisplayName(raw);
   if (name.length < 3) return 'Ten hang bay can toi thieu 3 ky tu.';
   if (name.length > 32) return 'Ten hang bay toi da 32 ky tu.';
   return null;
 }
+
+export const normalizeDisplayName = (raw: string): string =>
+  String(raw || '').trim().replace(/\s+/g, ' ');
