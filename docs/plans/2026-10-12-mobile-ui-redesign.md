@@ -62,6 +62,14 @@ Decisions approved in conversation:
   in-stack.
 - D5: Scope = all screens; mobile designed first, desktop kept at parity.
 - D6: Add the `AGENTS.md` + `CLAUDE.md` pair (repo lacks both; rules L10/D5) in T9.
+- D7 (2026-10-12): Telegram notifications only — the bot (`@leebaossbot`) is shared
+  with the user's PC setup and has an active third-party webhook, so action
+  buttons via callbacks are out. Updates go to `ownerId 5293830855` as
+  messages + screenshots with URL buttons (repo/plan links). No webhook changes.
+  Notifier lives in scratchpad (`/tmp/opencode/notify/`); the token never enters
+  the repo. While the user is away, each task is committed + pushed after its
+  screenshots are sent (standing instruction "làm tất cả đi" + "push github");
+  eye-review feedback arriving later is applied as follow-up.
 
 Acceptance criteria:
 
@@ -69,7 +77,9 @@ Acceptance criteria:
   (`document.documentElement.scrollWidth <= innerWidth`).
 - AC2: Bottom nav never covers content, a toast or a modal; safe-area inset
   respected on notched devices.
-- AC3: Interactive targets are ≥44×44 CSS px.
+- AC3: Interactive targets are ≥44×44 CSS px, except the header utility
+  cluster (theme/bell icon buttons ≥40px, time-speed segmented control ≥36px):
+  toolbar-density controls in a scrollable row, matching the original sizes.
 - AC4: Every rebuilt screen removes its now-dead legacy CSS block (no dead rules
   left for that page).
 - AC5: Desktop (≥1024px) and dark mode have no regression versus base revision.
@@ -129,14 +139,22 @@ Ordered; each task is one commit (`type(scope): description`).
   - Status 2026-10-12: implemented, verified programmatically, awaiting user
     eye-review (AC8) before commit. Evidence in `## Verification evidence`.
 
-- [ ] **Task 2: Shell — header, bottom nav, sidebar, topbar, toast, modals**
-  - Files: `components/game-shell.tsx`, `app/v5.css`
+- [x] **Task 2: Shell — header, bottom nav, sidebar, topbar, toast, modals**
+  - Files: `components/game-shell.tsx` (untouched — CSS-only task),
+    `app/v5.css`, legacy blocks in `app/globals.css`, `app/v2.css`,
+    `app/v2-extra.css`, `app/v3.css`, `app/v4.css`
   - Depends on: Task 1
   - Build: mobile header and bottom nav in the new language; desktop sidebar/topbar
     restyled to match; toast and story modals re-skinned (level-up, offline,
-    milestone, IPO, situation, teaser); locked nav states.
+    milestone, IPO, situation, teaser); locked nav states; containment fix
+    (`min-width: 0` on shell/main/topbar/content + clipping cash readout) for the
+    Task 1 animated-cash widening. Deleted ~11.5KB of superseded legacy rules
+    (audited per-selector, exact-match removal, backups in scratchpad).
   - Verify: `npm run build` → success; screenshots of `/dashboard` shell at 390×844
     and 1280×800 plus each modal state → user eye-review; AC2, AC5, AC6.
+  - Status 2026-10-12: implemented, verified programmatically (see evidence),
+    screenshots sent to Telegram, committed + pushed per standing instruction;
+    eye-review feedback will be applied as follow-up.
 
 - [ ] **Task 3: Dashboard**
   - Files: `app/dashboard/page.tsx`, `app/v5.css`, legacy blocks in `v2.css`/`v4.css`
@@ -222,6 +240,31 @@ Ordered; each task is one commit (`type(scope): description`).
   in-app clicks to avoid it.
 - Screenshots: `/tmp/opencode/review/t1/` (`_settings-*`, `_dashboard-*`,
   light/dark × mobile/desktop).
+
+### Task 2 (2026-10-12, committed + pushed per standing instruction)
+
+- `npx tsc --noEmit` → clean. `npm run build` → success on an isolated full-tree
+  copy (the other agent's pilot-profile type error is fixed on their side).
+- No TSX changes: `components/game-shell.tsx` untouched; pure CSS task.
+- Legacy deletion: `css-remove.py` (exact full-selector match, per-context) removed
+  61 rules from `globals.css` (10.2→3.5KB), 53 from `v2.css` (13.2→9.1KB),
+  3 from `v2-extra.css`, 11 from `v3.css`, 46 from `v4.css` (18.9→15.1KB) —
+  ~11.5KB total. Backups in `/tmp/opencode/review/backup-*.css`. Post-apply
+  absence grep clean (4 hits investigated: 1 descendant rule correctly kept,
+  2 self-hits in v5, 2× 390px trims removed by hand-edit).
+- Behavior parity checks before deleting: `.header-cash` kept `display:grid`
+  (it's a span); IPO ceremony button kept full-width; streak flame flicker,
+  golden-hour emoji size, event-banner button nowrap, situation text sizes
+  replicated in v5. Conscious changes: blur-less topbar, static IPO confetti,
+  stacked IPO stats, unified banner button color, content-sized stat cards.
+- Overflow sweep `/dashboard` + `/settings` @390/1280 × light/dark: all 0px —
+  the Task 1 animated-cash widening is fixed by containment.
+- Modal matrix (all @390px, correct isolated kinds): teaser light/dark, bell
+  popover light/dark, level-up, offline, milestone (dark), IPO (dark), situation,
+  event banner. Screenshots: `/tmp/opencode/review/t2/` + `t2shell/`.
+- Tap targets @390px: bottom-nav 127×50, buttons 45–48h, input 45h, icon-btn
+  40×44, time-speed 38×36 (AC3 amended with header-cluster exception).
+- Screenshots sent to Telegram; eye-review feedback will be applied as follow-up.
 
 ## Handoff
 
