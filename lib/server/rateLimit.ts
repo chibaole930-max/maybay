@@ -8,7 +8,7 @@
  * tren moi dia chi IP) nen quet toan bo cung re — khong can thu muc tinh rieng.
  */
 
-import { kvGetJsonEx, kvSetJsonEx } from './kv';
+import { kvGetJsonWithTtl, kvSetJsonEx } from './kv';
 
 const PREFIX = 'vat:rl';
 /** Sổ khoá tự quyên sau 10 phút — đủ để quét dọn khoá đã hết hạn. */
@@ -49,10 +49,10 @@ type Registry = { keys: string[] };
 /** Ghi nhận một lần gọi. Trả `ok: false` khi vượt hạn mức. */
 export async function hit(name: string, id: string, rule: Rule): Promise<RateResult> {
   const key = keyOf(name, id);
-  // `kvGetJsonEx` chứ không `kvGetJson`: ở chế độ file, `kvSetJsonEx` bọc giá trị
+  // `kvGetJsonWithTtl` chứ không `kvGetJson`: ở chế độ file, `kvSetJsonEx` bọc giá trị
   // trong `{ value, expiresAt }`. Đọc bằng `kvGetJson` sẽ nhận vỏ ngoài, `count`
   // thành `undefined` và mọi lần gọi sau đó đều bị coi là vượt hạn mức.
-  const bucket = await kvGetJsonEx<Bucket | null>(key, null);
+  const bucket = await kvGetJsonWithTtl<Bucket | null>(key, null);
 
   if (bucket && bucket.expiresAt > Date.now()) {
     bucket.count += 1;
@@ -78,13 +78,13 @@ async function remember(key: string): Promise<void> {
   if (Date.now() - sinceSweep < SWEEP_EVERY * 1000) return;
   sinceSweep = Date.now();
 
-  const registry = await kvGetJsonEx<Registry>(`${PREFIX}:registry`, { keys: [] });
+  const registry = await kvGetJsonWithTtl<Registry>(`${PREFIX}:registry`, { keys: [] });
   const next = registry.keys.includes(key) ? registry.keys : [...registry.keys, key].slice(-500);
   await kvSetJsonEx(`${PREFIX}:registry`, { keys: next }, SWEEP_WINDOW_SECONDS);
 
   // Quét toàn bộ sổ: vài chục khoá nên đọc hết vẫn rẻ, không cần thư mục chỉ mục riêng.
-  // `kvGetJsonEx` tự xoá khoá đã hết hạn, nên chỉ cần đọc là xong.
-  await Promise.all(next.map((k) => kvGetJsonEx<Bucket | null>(k, null)));
+  // `kvGetJsonWithTtl` tự xoá khoá đã hết hạn, nên chỉ cần đọc là xong.
+  await Promise.all(next.map((k) => kvGetJsonWithTtl<Bucket | null>(k, null)));
 }
 
 export const rules: Record<string, Rule> = {
