@@ -113,7 +113,7 @@ Review harness (scratchpad, never in the repo):
 
 Ordered; each task is one commit (`type(scope): description`).
 
-- [ ] **Task 1: Tokens, mono font, `v5.css` base components**
+- [x] **Task 1: Tokens, mono font, `v5.css` base components**
   - Files: `app/v5.css` (new), `app/layout.tsx`
   - Build: token set (bg/surface/text/line/navy/blue/accent/success/danger, radius
     scale 8/13/18/pill, elevation `--sh-1`/`--sh-2`, type scale, spacing, named
@@ -122,9 +122,12 @@ Ordered; each task is one commit (`type(scope): description`).
     `badge` (+`warn`/`danger`), `progress` (subtle sheen), `input`/`select`/`label`,
     table, `muted`, `eyebrow`, `title`/`sub`, `section-title`, `page-heading`,
     `term-help`. Add the JetBrains Mono webfont in `layout.tsx`.
-  - Verify: `npx tsc --noEmit` → clean; `npm run build` → success; screenshots of
-    `/settings` (component-heavy) at 390×844 and 1280×800, light + dark →
-    user eye-review; AC1, AC3, AC5, AC6.
+  - Verify: `npx tsc --noEmit` → clean; `npm run build` → success (on base +
+    Task 1; the concurrent pilot-profile WIP in the shared checkout fails typecheck
+    on its own — out of scope); screenshots of `/settings` (component-heavy) at
+    390×844 and 1280×800, light + dark → user eye-review; AC1, AC3, AC5, AC6.
+  - Status 2026-10-12: implemented, verified programmatically, awaiting user
+    eye-review (AC8) before commit. Evidence in `## Verification evidence`.
 
 - [ ] **Task 2: Shell — header, bottom nav, sidebar, topbar, toast, modals**
   - Files: `components/game-shell.tsx`, `app/v5.css`
@@ -192,7 +195,33 @@ Ordered; each task is one commit (`type(scope): description`).
 
 ## Verification evidence
 
-Not run yet.
+### Task 1 (2026-10-12, uncommitted — awaiting AC8 eye-review)
+
+- `npx tsc --noEmit` → clean (exit 0, no output).
+- `npm run build` → success on an isolated copy (base revision + Task 1 only).
+  The shared checkout's concurrent pilot-profile WIP (`app/api/pilot/route.ts`:
+  `Property 'id' does not exist on type 'ProfilePilot'`) fails typecheck on its
+  own and was excluded from the build copy; it belongs to the other agent.
+- In-stack computed-style probe on `/settings` @390px (dev server + headless
+  Chromium, harness in `/tmp/opencode/review/`):
+  `card borderRadius=13px`, `badge borderRadius=999px`,
+  `progress height=6px`, `tabular-nums fontFamily=JetBrains Mono`,
+  `input borderRadius=11px minHeight=44px`. v5 stylesheet confirmed loaded.
+- Overflow sweep (after `document.fonts.ready`): all Task 1 captures 0px except
+  `/settings` mobile-light, which widens 1–3px intermittently. Root cause proven
+  by sampling (see `/tmp/opencode/review/diag.mjs`): the `/phút` income figure
+  spring-animates (`$15.540 → $12.781 → …`), and at long-string frames
+  `.header-cash` reaches 81px, stretching `.topbar` (392px) because `.main` has
+  no `min-width: 0` containment. v5's wider mono digits tip it over the edge.
+  Fix belongs to Task 2 (shell): contain the topbar and let the cash readout
+  clip instead of widening the page.
+- Pre-existing app bug found during harness setup (out of scope, raised): on a
+  fresh page load the persisted store has not rehydrated when `GameShell`'s
+  effect runs, so `airline === null` and the app replaces the URL with
+  `/onboarding` even though a valid save exists. The harness navigates by
+  in-app clicks to avoid it.
+- Screenshots: `/tmp/opencode/review/t1/` (`_settings-*`, `_dashboard-*`,
+  light/dark × mobile/desktop).
 
 ## Handoff
 
