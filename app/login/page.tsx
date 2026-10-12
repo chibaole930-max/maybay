@@ -123,12 +123,11 @@ export default function LoginPage() {
         display: 'grid',
         placeItems: 'center',
         padding: '24px 16px',
-        background: 'linear-gradient(135deg, #eef5fc, #f4f7fc)',
       }}
     >
       <div className="card onboard-card" style={{ width: 'min(100%, 460px)', padding: '32px 28px', boxShadow: '0 16px 40px rgba(11, 31, 58, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 16, background: '#0a58ca18', color: '#0a58ca', display: 'grid', placeItems: 'center', margin: '0 auto 12px' }}>
+          <div className="tile-ic" style={{ width: 52, height: 52, margin: '0 auto 12px' }}>
             <Plane size={26} />
           </div>
           <h1 className="title" style={{ fontSize: 22 }}>
@@ -137,28 +136,13 @@ export default function LoginPage() {
           <p className="sub">{tab === 'login' ? 'Vào lại hãng bay của bạn, trên mọi thiết bị' : 'Một tài khoản giữ trọn tiến độ của bạn'}</p>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginBottom: 22 }}>
+        <div className="seg-tabs">
           {([['login', 'Đăng nhập', KeyRound], ['register', 'Đăng ký', UserPlus]] as const).map(([id, label, Icon]) => (
             <button
               key={id}
               type="button"
               onClick={() => switchTab(id)}
               aria-pressed={tab === id}
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '10px 12px',
-                borderRadius: 12,
-                border: `1px solid ${tab === id ? '#0a58ca' : 'var(--line)'}`,
-                background: tab === id ? 'rgba(10, 88, 202, 0.06)' : 'var(--surface)',
-                color: tab === id ? '#0a58ca' : 'var(--muted)',
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: 'pointer',
-              }}
             >
               <Icon size={16} />
               {label}
@@ -218,7 +202,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setReveal((v) => !v)}
                 aria-label={reveal ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: 6, display: 'grid' }}
+                className="reveal-btn"
               >
                 {reveal ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
@@ -267,7 +251,7 @@ export default function LoginPage() {
 }
 
 function FieldError({ message }: { message: string }) {
-  return <p style={{ color: '#e84b3c', fontSize: 12, marginTop: 6 }}>{message}</p>;
+  return <p className="field-err">{message}</p>;
 }
 
 function Hint({ text }: { text: string }) {

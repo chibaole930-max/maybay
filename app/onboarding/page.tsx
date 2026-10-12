@@ -47,7 +47,6 @@ export default function Onboarding() {
         display: 'grid',
         placeItems: 'center',
         padding: '24px 16px',
-        background: 'linear-gradient(135deg, #eef5fc, #f4f7fc)',
       }}
     >
       <div
@@ -60,19 +59,7 @@ export default function Onboarding() {
       >
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 18,
-              background: '#0a58ca18',
-              color: '#0a58ca',
-              display: 'grid',
-              placeItems: 'center',
-              margin: '0 auto 12px',
-              fontSize: 28,
-            }}
-          >
+          <div className="tile-ic" style={{ width: 56, height: 56, margin: '0 auto 12px', fontSize: 28 }}>
             ✈️
           </div>
           <h1 className="title" style={{ fontSize: 24 }}>
@@ -91,7 +78,7 @@ export default function Onboarding() {
                 height: 6,
                 flex: 1,
                 borderRadius: 6,
-                background: n <= step ? '#0a58ca' : 'rgba(0,0,0,0.08)',
+                background: n <= step ? 'var(--blue)' : 'var(--surface-sunken)',
                 transition: 'background 0.25s ease',
               }}
             />
@@ -102,7 +89,7 @@ export default function Onboarding() {
         {step === 1 && (
           <div>
             <label className="label">
-              Tên thương hiệu hãng bay <span style={{ color: '#e84b3c' }}>*</span>
+              Tên thương hiệu hãng bay <span style={{ color: 'var(--danger)' }}>*</span>
             </label>
             <input
               className="input"
@@ -118,7 +105,7 @@ export default function Onboarding() {
                 justifyContent: 'space-between',
                 fontSize: 11,
                 marginTop: 6,
-                color: name.length > 0 && !isNameValid ? '#e84b3c' : 'var(--muted)',
+                color: name.length > 0 && !isNameValid ? 'var(--danger)' : 'var(--muted)',
               }}
             >
               <span>{name.length < 3 ? 'Tối thiểu 3 ký tự' : 'Hợp lệ'}</span>
@@ -135,16 +122,8 @@ export default function Onboarding() {
                   type="button"
                   aria-label={c}
                   onClick={() => setColor(c)}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 12,
-                    background: c,
-                    border: color === c ? '3px solid #0b1f3a' : '2px solid transparent',
-                    boxShadow: color === c ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
-                    transform: color === c ? 'scale(1.08)' : 'scale(1)',
-                    transition: 'transform 0.15s',
-                  }}
+                  className={`swatch ${color === c ? 'selected' : ''}`}
+                  style={{ background: c, width: 40, height: 40 }}
                 />
               ))}
             </div>
@@ -158,15 +137,7 @@ export default function Onboarding() {
                   key={i}
                   type="button"
                   onClick={() => setIcon(i)}
-                  className="btn ghost"
-                  style={{
-                    fontSize: 22,
-                    padding: 8,
-                    minWidth: 48,
-                    minHeight: 48,
-                    borderColor: icon === i ? '#0a58ca' : undefined,
-                    background: icon === i ? '#0a58ca15' : undefined,
-                  }}
+                  className={`logo-btn ${icon === i ? 'selected' : ''}`}
                 >
                   {i}
                 </button>
@@ -175,11 +146,9 @@ export default function Onboarding() {
 
             {/* Live Preview badge */}
             <div
+              className="card sub-card"
               style={{
                 marginTop: 24,
-                padding: '12px 16px',
-                borderRadius: 14,
-                background: 'var(--bg)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
@@ -283,8 +252,8 @@ export default function Onboarding() {
                   className="card"
                   style={{
                     cursor: 'pointer',
-                    borderColor: difficulty === item.id ? '#0a58ca' : 'var(--line)',
-                    background: difficulty === item.id ? 'rgba(10, 88, 202, 0.04)' : 'var(--surface)',
+                    borderColor: difficulty === item.id ? 'var(--blue)' : 'var(--line)',
+                    background: difficulty === item.id ? 'var(--blue-light)' : 'var(--surface)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -294,7 +263,7 @@ export default function Onboarding() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <b style={{ fontSize: 14 }}>{item.title}</b>
-                      <span className="badge" style={{ color: '#0a58ca' }}>
+                      <span className="badge info">
                         {item.cash}
                       </span>
                     </div>
@@ -302,7 +271,7 @@ export default function Onboarding() {
                       {item.desc}
                     </div>
                   </div>
-                  {difficulty === item.id && <Check color="#0a58ca" size={20} />}
+                  {difficulty === item.id && <Check color="var(--blue)" size={20} />}
                 </div>
               ))}
             </div>
@@ -331,9 +300,8 @@ export default function Onboarding() {
           ) : (
             <button
               type="button"
-              className="btn"
+              className="btn success"
               onClick={handleSubmit}
-              style={{ background: '#12a678' }}
             >
               Cất cánh ngay! ✈️
             </button>

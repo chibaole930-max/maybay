@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import './v2.css';
-import './v2-pages.css';
 import 'leaflet/dist/leaflet.css';
 // v5 owns the cascade: loaded last so the new design layer wins over v2–v4.
 import './v5.css';

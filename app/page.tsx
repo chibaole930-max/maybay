@@ -149,17 +149,17 @@ export default function Home() {
           }}
         >
           <div className="card" style={{ textAlign: 'center' }}>
-            <span style={{ fontSize: 28, fontWeight: 800, color: '#0a58ca' }}>24</span>
+            <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--blue)' }}>24</span>
             <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>Dòng máy bay danh tiếng</div>
             <div className="muted" style={{ fontSize: 11 }}>ATR, Airbus, Boeing, Embraer, COMAC</div>
           </div>
           <div className="card" style={{ textAlign: 'center' }}>
-            <span style={{ fontSize: 28, fontWeight: 800, color: '#12a678' }}>18</span>
+            <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--success)' }}>18</span>
             <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>Sân bay kết nối</div>
             <div className="muted" style={{ fontSize: 11 }}>Nội địa 3 miền & Quốc tế khu vực</div>
           </div>
           <div className="card" style={{ textAlign: 'center' }}>
-            <span style={{ fontSize: 28, fontWeight: 800, color: '#e89a20' }}>20</span>
+            <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent-ink)' }}>20</span>
             <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>Hãng đối thủ AI</div>
             <div className="muted" style={{ fontSize: 11 }}>Cạnh tranh giá vé và thị phần sống động</div>
           </div>
@@ -182,7 +182,7 @@ export default function Home() {
 
         <div className="grid-3">
           <div className="card">
-            <span style={{ color: '#0a58ca', display: 'block', marginBottom: 12 }}>
+            <span style={{ color: 'var(--blue)', display: 'block', marginBottom: 12 }}>
               <Plane size={32} />
             </span>
             <h3 style={{ fontSize: 18, marginBottom: 8 }}>Xây dựng & Nâng cấp Đội bay</h3>
@@ -193,7 +193,7 @@ export default function Home() {
           </div>
 
           <div className="card">
-            <span style={{ color: '#12a678', display: 'block', marginBottom: 12 }}>
+            <span style={{ color: 'var(--success)', display: 'block', marginBottom: 12 }}>
               <Map size={32} />
             </span>
             <h3 style={{ fontSize: 18, marginBottom: 8 }}>Quy hoạch Mạng đường bay</h3>
@@ -221,7 +221,7 @@ export default function Home() {
 
         {/* Footer */}
         <div className="landing-footer" style={{ textAlign: 'center', padding: '40px 0 30px' }}>
-          <ShieldCheck size={28} color="#0a58ca" style={{ margin: '0 auto 8px' }} />
+          <ShieldCheck size={28} color="var(--blue)" style={{ margin: '0 auto 8px' }} />
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>
             Vietnam Airline Tycoon · Mô phỏng hàng không với tiến trình lưu trực tiếp trên thiết bị.
           </div>

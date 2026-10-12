@@ -208,12 +208,15 @@ Ordered; each task is one commit (`type(scope): description`).
     screenshots sent to Telegram, committed + pushed per standing instruction;
     eye-review feedback will be applied as follow-up.
 
-- [ ] **Task 8: Tutorial + Login + Onboarding + Landing**
+- [x] **Task 8: Tutorial + Login + Onboarding + Landing**
   - Files: `app/tutorial/page.tsx`, `app/login/page.tsx`, `app/onboarding/page.tsx`,
     `app/page.tsx`, `app/v5.css`, legacy blocks
   - Depends on: Task 7
   - Verify: `npm run build`; screenshots of the full onboarding flow and landing at
     390×844 / 1280×800 → user eye-review; AC1, AC4, AC5.
+  - Status 2026-10-12: implemented, verified programmatically (see evidence),
+    screenshots sent to Telegram, committed + pushed per standing instruction;
+    eye-review feedback will be applied as follow-up.
 
 - [ ] **Task 9: Harden, retire dead CSS, docs**
   - Files: `app/v5.css`, emptied legacy CSS files, `app/layout.tsx`, `AGENTS.md` +
@@ -396,6 +399,36 @@ Ordered; each task is one commit (`type(scope): description`).
   step 2, all ×light/dark — 10/10 correct, overflow 0. Sweep 4 pages @390/1280
   × light/dark: 0. Shortage warn-card state not separately shot (same pattern
   as verified warn/danger cards). Screenshots: `/tmp/opencode/review/t7/`.
+- Git incident: `git commit -- <paths>` fails on staged deletions, which split
+  T7 into a deletions-only commit; caught pre-push by the `grep -c` gate
+  (count 0 → chain stopped). Fixed with `git commit --amend`, verified
+  `git show HEAD --stat` (9 files) before pushing. Rule: with deletions,
+  stage everything, plain `git commit`, then verify the commit contents.
+
+### Task 8 (2026-10-12, committed + pushed per standing instruction)
+
+- `npx tsc --noEmit` → clean. `npm run build` → success (isolated full-tree copy).
+- v5 §16: onboard bg/card, quick-btn, advanced-teaser, login seg-tabs/field-err/
+  reveal-btn, full tutorial flip set, landing nav/hero/steps/faq/footer +
+  responsive. Tutorial tsx needed zero changes. Entry flows are light-only by
+  design (no shell → no dark class — same as legacy).
+- TSX: onboarding swatches/logo/preview/difficulty/submit → shared classes;
+  login tabs/reveal/errors; landing stat/icon colors → vars (hero/CTA colors
+  kept — navy-context brand). Caught a v5 selector bug (`.quick-btn
+  span:last-child` matched nothing — descriptivespan isn't last) before deleting
+  legacy.
+- Legacy deletion: 8 rules globals (hero/plane-art/landing-nav), 38 rules v2
+  (onboard + dead scaffolding), 44 rules v2-pages (entire file) + dead
+  `@keyframes flyby` (moved to v5 as v5-flyby) + `.dark .tutorial-back` — then
+  `v2.css` (only shadowed tokens/duplicates remained) and `v2-pages.css`
+  (whitespace) were both retired. Imports now: globals + leaflet + v5 only.
+- Captures: landing m+d, onboarding step 1 + step 2 (state verified: difficulty
+  options + "Bước 2 trên 2" present), login + register tab, tutorial + flipped
+  card ×light/dark — 10/10 correct URLs, overflow 0. Sweep /tutorial+/login
+  @390/1280 × light/dark: 0. Advanced-teaser placeholder not live-shot
+  (unreachable from outside: locked-nav intercepts, fresh loads bounce — known
+  pre-existing bug; rules are verbatim copies + vars). Screenshots:
+  `/tmp/opencode/review/t8/`.
 
 ## Handoff
 
