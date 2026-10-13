@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, Eye, EyeOff, KeyRound, Plane, ShieldCheck, UserPlus } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Eye, EyeOff, KeyRound, MailCheck, Plane, ShieldCheck, UserPlus } from 'lucide-react';
 import { netClient } from '@/lib/net/netClient';
 import { firebaseConfigured, firebaseMissingEnv } from '@/lib/firebase/client';
 import { useGameStore } from '@/store/useGameStore';
@@ -12,6 +12,9 @@ type Tab = 'login' | 'register';
 type Errors = Partial<Record<'email' | 'password' | 'confirm' | 'name' | 'form', string>>;
 
 const EMAIL_HINT = 'Email dùng để đăng nhập và khôi phục tài khoản';
+
+/** Bao lâu sau khi bấm "gửi lại" thì cho gửi tiếp — tránh spam cho chính mình. */
+const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,12 +28,26 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
+  /**
+   * Email đã tạo tài khoản nhưng chưa xác minh — hiện màn hình chờ thay vì form.
+   * `pendingName` giữ lại tên hãng bay để sau khi xác minh xong còn dùng.
+   */
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [pendingName, setPendingName] = useState('');
+  const [resendIn, setResendIn] = useState(0);
 
   // Cho phep mo thang tab Dang ky bang link /login?tab=register.
   useEffect(() => {
     const wanted = new URLSearchParams(window.location.search).get('tab');
     if (wanted === 'register' || wanted === 'login') setTab(wanted);
   }, []);
+
+  // Đếm ngược nút "gửi lại email xác minh".
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = setTimeout(() => setResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendIn]);
 
   // Đã có phiên đăng nhập thì đưa thẳng vào game.
   useEffect(() => {
@@ -96,6 +113,13 @@ export default function LoginPage() {
 
     setBusy(false);
     if (!result.ok) {
+      // Máy chủ từ chối vì email chưa xác minh — chuyển sang màn hình chờ.
+      if (result.pendingVerification) {
+        setPendingEmail(email.trim());
+        setPendingName(name.trim());
+        setResendIn(RESEND_COOLDOWN_SECONDS);
+        return;
+      }
       // Firebase báo lỗi bằng mã kỹ thuật; `netClient` đã dịch sang tiếng Việt.
       const message = result.error;
       if (/email/i.test(message)) setErrors({ email: message });
@@ -106,6 +130,89 @@ export default function LoginPage() {
     }
     router.push(airline ? '/dashboard' : '/onboarding');
   };
+
+  /** Người dùng báo đã bấm link xác minh — thử đổi phiên lại. */
+  const confirmVerified = async () => {
+    setBusy(true);
+    setErrors({});
+    const result = await netClient.refreshAfterVerification(pendingName || undefined);
+    setBusy(false);
+    if (result.ok) {
+      router.push(airline ? '/dashboard' : '/onboarding');
+      return;
+    }
+    setErrors({ form: result.error });
+  };
+
+  const resendVerification = async () => {
+    setBusy(true);
+    setErrors({});
+    const result = await netClient.sendVerificationEmail();
+    setBusy(false);
+    if (result.ok) {
+      setResendIn(RESEND_COOLDOWN_SECONDS);
+      setErrors({});
+    } else {
+      setErrors({ form: result.error || 'Không gửi lại được email xác minh.' });
+    }
+  };
+
+  const backToForm = () => {
+    setPendingEmail(null);
+    setErrors({});
+    setPassword('');
+    setConfirm('');
+  };
+
+  if (pendingEmail) {
+    return (
+      <main
+        className="onboard-bg"
+        style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '24px 16px' }}
+      >
+        <div className="card onboard-card" style={{ width: 'min(100%, 460px)', padding: '32px 28px', boxShadow: '0 16px 40px rgba(11, 31, 58, 0.08)' }}>
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <div className="tile-ic" style={{ width: 52, height: 52, margin: '0 auto 12px' }}>
+              <MailCheck size={26} />
+            </div>
+            <h1 className="title" style={{ fontSize: 20 }}>Xác minh email</h1>
+            <p className="sub">Một bước nữa là vào được game</p>
+          </div>
+
+          <p style={{ fontSize: 14, lineHeight: 1.7, margin: '0 0 16px' }}>
+            Mình đã gửi đường dẫn xác minh tới <b>{pendingEmail}</b>. Mở hộp thư và bấm
+            vào đường dẫn để xác nhận địa chỉ này thuộc về bạn.
+          </p>
+          <p className="muted" style={{ fontSize: 12, lineHeight: 1.6, margin: '0 0 18px' }}>
+            Chưa thấy email? Kiểm tra thư mục spam. Email xác minh có hiệu lực vài giờ —
+            nếu hết hạn thì bấm &quot;gửi lại&quot; để nhận cái mới.
+          </p>
+
+          {errors.form && (
+            <p className="badge danger" style={{ display: 'block', marginBottom: 14, textAlign: 'center' }}>{errors.form}</p>
+          )}
+
+          <button className="btn" onClick={confirmVerified} disabled={busy} style={{ width: '100%' }}>
+            {busy ? 'Đang kiểm tra…' : 'Tôi đã xác minh xong'} <ArrowRight size={16} />
+          </button>
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            <button className="btn ghost" style={{ flex: 1 }} onClick={resendVerification} disabled={busy || resendIn > 0}>
+              {resendIn > 0 ? `Gửi lại sau ${resendIn}s` : 'Gửi lại email'}
+            </button>
+            <button className="btn ghost" style={{ flex: 1 }} onClick={backToForm} disabled={busy}>
+              Đổi email
+            </button>
+          </div>
+
+          <div style={{ borderTop: '1px solid var(--line)', marginTop: 18, paddingTop: 16, textAlign: 'center' }}>
+            <span className="muted" style={{ fontSize: 13 }}>Không muốn làm tài khoản? </span>
+            <Link href="/onboarding?quick=1" style={{ fontSize: 13, fontWeight: 600 }}>Chơi ngay không cần đăng nhập →</Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (checking) {
     return (

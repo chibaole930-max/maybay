@@ -275,7 +275,11 @@ export async function resolveSession(token: string): Promise<Pilot | null> {
  */
 export type SyncResult =
   | { ok: true; pilot: Pilot; token: string; created: boolean }
-  | { ok: false; error: string; field?: 'email' | 'name' };
+  | { ok: false; error: string; field?: 'email' | 'name' | 'verification' };
+
+/** Chặn ở máy chủ, không dựa vào Firebase SDK của client. */
+export const EMAIL_NOT_VERIFIED_ERROR =
+  'Bạn cần xác minh địa chỉ email trước khi vào game. Mở hộp thư để lấy đường dẫn xác minh.';
 
 /** Ten hien thi lay tu Firebase neu nguoi choi chua dat ten hang bay. */
 const nameFromIdentity = (displayName: string | null, email: string): string => {
@@ -287,8 +291,15 @@ const nameFromIdentity = (displayName: string | null, email: string): string => 
 export async function syncFirebaseIdentity(identity: {
   uid: string;
   email: string | null;
+  emailVerified: boolean;
   displayName: string | null;
 }, requestedName?: string): Promise<SyncResult> {
+  // Chặn ngay ở đây chứ không trông chờ client. Nếu chỉ chặn ở UI thì gọi thẳng
+  // API là lọt; đây là ranh giới thật sự của quyền vào game.
+  if (!identity.emailVerified) {
+    return { ok: false, error: EMAIL_NOT_VERIFIED_ERROR, field: 'verification' };
+  }
+
   const email = identity.email ? normalizeEmail(identity.email) : '';
   const db = await readDB();
 

@@ -100,7 +100,12 @@ export async function POST(request: Request) {
     }
 
     const result = await syncFirebaseIdentity(identity, json.name ? String(json.name) : undefined);
-    if (!result.ok) return NextResponse.json({ error: result.error, field: result.field }, { status: 400 });
+    if (!result.ok) {
+      // Chưa xác minh email là "tạm thời chưa được vào" chứ không phải nhập sai —
+      // 403 để client hiện màn hình chờ thay vì báo lỗi form.
+      const status = result.field === 'verification' ? 403 : 400;
+      return NextResponse.json({ error: result.error, field: result.field }, { status });
+    }
 
     return NextResponse.json(
       { account: { id: result.pilot.id, code: result.pilot.code, name: result.pilot.name, username: result.pilot.username, email: result.pilot.email, createdAt: result.pilot.createdAt }, created: result.created },
