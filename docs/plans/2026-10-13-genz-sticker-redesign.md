@@ -113,7 +113,10 @@ the auth-mocked harness before commit. Final batch deletes `v5.css`.
     13 captures (empty/catalog/hangar + 4 fleet modals + routes list/create/edit
     + dark pages), overflow 0, sent to Telegram (post-review under D5).
 - [x] **Task 5: airports + map chrome** (no logic/geo changes)
-  - Done in d5282f0. Pure CSS (no tsx change). Verified: 10 captures, overflow 0.
+  - Done in d5282f0. Pure CSS. Verified 10 captures, overflow 0.
+- [x] **Task 6: finance + missions + leaderboard** (leaderboard logic untouched)
+  - Done in 2baa330. Pure CSS (hooks + colors already var-based).
+    Verified 15 captures, overflow 0.
 - [ ] **Task 6: finance + missions + leaderboard** (leaderboard logic untouched)
 - [ ] **Task 7: research + staff + community + settings** (community logic untouched)
 - [ ] **Task 8: entry flows** (landing/onboarding/tutorial/login styles only —
