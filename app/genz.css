@@ -4680,3 +4680,464 @@ input[type='range'] {
     font-size: 12px;
   }
 }
+
+/* ================================================== 16. Entry flows */
+.onboard-bg {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(124, 58, 237, 0.14), transparent 45%),
+    radial-gradient(rgba(34, 34, 59, 0.06) 1.2px, transparent 1.3px),
+    var(--bg);
+  background-size: auto, 22px 22px, auto;
+}
+
+.onboard-card {
+  width: min(100%, 560px);
+  padding: clamp(20px, 5vw, 32px);
+}
+
+.swatch {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  border: var(--bd);
+  cursor: pointer;
+  flex: none;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: transform 0.14s var(--ease), box-shadow 0.14s var(--ease);
+}
+
+.swatch.selected {
+  transform: scale(1.12) rotate(-3deg);
+  box-shadow: 3px 3px 0 var(--ink);
+  outline: 2px solid var(--violet);
+  outline-offset: 1px;
+}
+
+.logo-btn {
+  min-width: 46px;
+  min-height: 46px;
+  padding: 8px;
+  font-size: 20px;
+  border-radius: 12px;
+  border: var(--bd);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  flex: none;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.logo-btn.selected {
+  background: var(--lime);
+  transform: rotate(-2deg);
+}
+
+/* ------------------------------------------------------ login form */
+.seg-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.seg-tabs button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: var(--bd);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.seg-tabs button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--lime);
+}
+
+.field-err {
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.reveal-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  min-width: 36px;
+  min-height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+/* -------------------------------------------------------- tutorial */
+.tutorial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tutorial-card-wrap {
+  height: 240px;
+  perspective: 900px;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.tutorial-flip {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.tutorial-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  padding: 18px;
+  overflow: hidden;
+}
+
+.tutorial-front {
+  background: linear-gradient(155deg, var(--surface), var(--surface-subtle));
+}
+
+.tutorial-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(155deg, var(--blue-light), var(--surface));
+}
+
+.tutorial-step {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--violet-deep);
+  background: var(--lime);
+  border: var(--bd-sm);
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.tutorial-icon {
+  width: 42px;
+  height: 42px;
+  margin: 20px 0 12px;
+  border-radius: 13px;
+  border: var(--bd-sm);
+  display: grid;
+  place-items: center;
+  background: var(--violet);
+  color: #fff;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.tutorial-front > b,
+.tutorial-back > b {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.tutorial-front small {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+.tutorial-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--violet-deep);
+  margin-top: auto;
+}
+
+.tutorial-back p {
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 10px 0 auto;
+}
+
+.tutorial-back .btn {
+  width: 100%;
+  margin-top: 10px;
+  min-height: 40px;
+  font-size: 12px;
+}
+
+.tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 960px;
+  margin: 18px auto;
+}
+
+/* --------------------------------------------------------- landing */
+.landing-nav {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  flex-wrap: wrap;
+}
+
+.landing-nav-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hero {
+  background: linear-gradient(130deg, var(--ink), #3b2a6e 60%, var(--violet));
+  color: #fff;
+  border: var(--bd);
+  border-radius: 26px;
+  padding: 44px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--sh-2);
+}
+
+.plane-art {
+  font-size: 120px;
+  position: absolute;
+  right: 6%;
+  top: 10%;
+  opacity: 0.9;
+  transform: rotate(-10deg);
+  pointer-events: none;
+  animation: v5-flyby 9s ease-in-out infinite alternate;
+}
+
+@keyframes v5-flyby {
+  from {
+    transform: translate(-8px, 4px) rotate(-12deg);
+  }
+  to {
+    transform: translate(28px, -12px) rotate(-7deg);
+  }
+}
+
+.plane-art svg {
+  width: 150px;
+  height: auto;
+  filter: drop-shadow(0 16px 18px rgba(0, 0, 0, 0.4));
+}
+
+.landing-steps,
+.landing-section {
+  margin: 52px auto;
+}
+
+.landing-steps h2,
+.landing-section h2 {
+  font-family: var(--font-display);
+  font-size: 25px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.landing-steps .card {
+  padding: 20px;
+}
+
+.landing-steps h3 {
+  font-size: 15px;
+  margin: 12px 0 6px;
+  font-family: var(--font-display);
+}
+
+.landing-steps p {
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.step-number {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  border-radius: 13px;
+  border: var(--bd-sm);
+  background: var(--lime);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.faq-item {
+  padding: 14px 16px;
+}
+
+.faq-item summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::after {
+  content: '+';
+  margin-left: auto;
+  color: var(--violet-deep);
+  font-size: 18px;
+  font-weight: 400;
+  padding-left: 10px;
+}
+
+.faq-item[open] summary::after {
+  content: '−';
+}
+
+.faq-item p {
+  font-size: 11.5px;
+  line-height: 1.6;
+  margin-top: 10px;
+}
+
+.landing-footer {
+  border-top: var(--bd);
+  margin-top: 42px;
+}
+
+/* -------------------------------------------------- entry responsive */
+@media (max-width: 760px) {
+  .hero {
+    min-height: calc(82svh - 70px);
+    display: flex;
+    align-items: center;
+    padding: 26px 18px;
+    border-radius: 20px;
+  }
+
+  .plane-art {
+    font-size: 64px;
+    right: 4%;
+    top: 14%;
+  }
+
+  .faq-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tutorial-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .tutorial-card-wrap {
+    height: 225px;
+  }
+
+  .tutorial-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tutorial-footer .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .landing-nav-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+
+  .landing-nav-actions .btn {
+    padding: 9px 13px;
+    font-size: 13px;
+  }
+
+  .nav-name {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .tutorial-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tutorial-card-wrap {
+    height: 205px;
+  }
+
+  .landing-steps h2,
+  .landing-section h2 {
+    font-size: 21px;
+  }
+
+  .landing-section .table-wrap {
+    padding: 8px;
+  }
+
+  .landing-section table {
+    min-width: 480px;
+  }
+}
+
+@media (max-width: 400px) {
+  .onboard-card {
+    padding: 19px;
+  }
+}

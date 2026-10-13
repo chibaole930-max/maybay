@@ -117,8 +117,8 @@ the auth-mocked harness before commit. Final batch deletes `v5.css`.
 - [x] **Task 6: finance + missions + leaderboard** (leaderboard logic untouched)
   - Done in 2baa330. Pure CSS (hooks + colors already var-based).
     Verified 15 captures, overflow 0.
-- [ ] **Task 6: finance + missions + leaderboard** (leaderboard logic untouched)
-- [ ] **Task 7: research + staff + community + settings** (community logic untouched)
+- [x] **Task 7: research + staff + community + settings** (community logic untouched)
+  - Done in d31deea. Pure CSS. Verified 10 captures, overflow 0.
 - [ ] **Task 8: entry flows** (landing/onboarding/tutorial/login styles only —
     login tab owns their logic; extra care, announce in Messages first)
 - [ ] **Task 9: harden + retire v5.css + docs**
