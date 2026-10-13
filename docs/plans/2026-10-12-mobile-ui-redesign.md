@@ -465,9 +465,36 @@ applying any feedback as follow-ups. AC8 is therefore still open by design.
 Checkout: `/home/chibao/vietnam-airline-tycoon`, branch `main`, in sync with
 `origin/main`. No PR requested. Review harness in `/tmp/opencode/review/`
 (scratchpad): `shot.mjs` (page sweeps), `modal.mjs` (story states), `t4/t6/t7/
-t8.mjs` (task captures), `css-remove.py` (exact-match legacy retirement),
-`sync.sh` + `ensure-dev.sh` (isolated dev on :3100).
+t8.mjs` (task captures), `money.mjs` (money truncation audit), `css-remove.py`
+(exact-match legacy retirement), `sync.sh` + `ensure-dev.sh` (isolated dev
+on :3100).
 
 Blockers: none. Known follow-up candidates (only if the user asks):
 dual-token refactor for dark blue body text (currently 3.80, ≥3.0 MID),
 advanced-teaser placeholder never live-shot, empty-state shots rely on seed.
+
+## Follow-up 2026-10-13: money display fix (mobile)
+
+Symptom (user report): money hidden/clipped on mobile.
+Reproduction (unfixed code, `money.mjs` scrollWidth-vs-clientWidth audit,
+320/390px × USD-huge/VND-huge/USD-negative × 5 pages): confirmed —
+`.header-cash` ellipsis truncated 9–28px on every page; `.live-income-kpis b`
+ellipsis truncated up to 88px; `.stat-value` long mono figures spilled up to
+207px past their tiles; page-level overflow 27–178px.
+Root causes: (F1/F2) Task-2 `hidden/ellipsis/nowrap` on header cash + KPI
+values — real content loss; (F3) missing `overflow-wrap` + grid items with
+`min-width:auto` expanding tracks (stat tiles, KPI boxes); (F4) table cells
+inside the intended `.table-wrap` scroll — reachable, kept as the spec §4
+single-line case. A `.text-btn` nowrap spill (sell button, R333) and a
+duplicated v5 §12 block were also found and fixed during the pass.
+Fix (`app/v5.css` only, no logic/data changes): header cash wraps with fluid
+`clamp()` type (ellipsis/hidden/nowrap removed); KPI/stat/route/mission/sell/
+arrival/market/kv/econ/offline/IPO/activity money gets `overflow-wrap:
+anywhere`; grid children get `min-width: 0`; mobile header actions wrap
+instead of x-scroll; offline total fluid; table money stays single-line inside
+scroll. Desktop unchanged for normal values (same sizes/alignment).
+Verification: same 45-capture matrix (320/430/768) → 45/45 zero clip, zero
+page overflow; desktop 1280 sweep clean; `tsc` + `build` pass. One transient
++22px page widening appeared in a single session (3 captures, zero money loss,
+unreproduced in ~100 follow-up samples across 6 sessions incl. a 30s poll) —
+classified as a mid-animation measurement frame, not a defect; no fix stacked.
