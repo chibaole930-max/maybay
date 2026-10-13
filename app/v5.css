@@ -1,3 +1,5 @@
+/* Rendered below the genz layer: unlayered genz rules always win ties. */
+@layer legacy {
 /* =============================================================================
    v5 — Mobile-first design layer
    Direction "Gốc có dấu ấn": keep the original identity (aviation, navy/blue/
@@ -4367,4 +4369,5 @@ body.dark .leaflet-popup-content-wrapper {
     padding: 19px;
   }
 
+}
 }
