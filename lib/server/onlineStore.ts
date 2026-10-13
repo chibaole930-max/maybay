@@ -294,9 +294,21 @@ export async function syncFirebaseIdentity(identity: {
   emailVerified: boolean;
   displayName: string | null;
 }, requestedName?: string): Promise<SyncResult> {
-  // Chặn ngay ở đây chứ không trông chờ client. Nếu chỉ chặn ở UI thì gọi thẳng
+  // Cho phep bo qua xac minh email — CHI de dev local.
+//
+// Khoa cung o production: coi nhu bien khong ton tai. Neu chi tin vao "van hoc
+// co bien kia thi chan co bao gio bat", thi mot lan copy nham
+// `.env.local.example` len Vercel, hay mot lan bat de test roi quen tat, la
+// moi tai khoan deu vao duoc game ma khong can xac minh — va khong co dau hieu
+// gi de biet. O day bien khong duoc doc neu dang production, du co trong env.
+function skipsEmailVerification(): boolean {
+  if (process.env.NODE_ENV === 'production') return false;
+  return process.env.SKIP_EMAIL_VERIFICATION === 'true';
+}
+
+// Chặn ngay ở đây chứ không trông chờ client. Nếu chỉ chặn ở UI thì gọi thẳng
   // API là lọt; đây là ranh giới thật sự của quyền vào game.
-  if (!identity.emailVerified) {
+  if (!identity.emailVerified && !skipsEmailVerification()) {
     return { ok: false, error: EMAIL_NOT_VERIFIED_ERROR, field: 'verification' };
   }
 
