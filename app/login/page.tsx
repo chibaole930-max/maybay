@@ -206,8 +206,7 @@ export default function LoginPage() {
           </div>
 
           <div style={{ borderTop: '1px solid var(--line)', marginTop: 18, paddingTop: 16, textAlign: 'center' }}>
-            <span className="muted" style={{ fontSize: 13 }}>Không muốn làm tài khoản? </span>
-            <Link href="/onboarding?quick=1" style={{ fontSize: 13, fontWeight: 600 }}>Chơi ngay không cần đăng nhập →</Link>
+            <Link href="/tutorial" style={{ fontSize: 13, fontWeight: 600 }}>Chưa biết chơi? Xem hướng dẫn trước →</Link>
           </div>
         </div>
       </main>
@@ -360,8 +359,7 @@ export default function LoginPage() {
         </p>
 
         <div style={{ borderTop: '1px solid var(--line)', marginTop: 18, paddingTop: 16, textAlign: 'center' }}>
-          <span className="muted" style={{ fontSize: 13 }}>Chưa muốn làm tài khoản? </span>
-          <Link href="/onboarding?quick=1" style={{ fontSize: 13, fontWeight: 600 }}>Chơi ngay không cần đăng nhập →</Link>
+          <Link href="/tutorial" style={{ fontSize: 13, fontWeight: 600 }}>Chưa biết chơi? Xem hướng dẫn trước →</Link>
         </div>
       </div>
     </main>

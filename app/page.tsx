@@ -57,8 +57,8 @@ export default function Home() {
               <span className="nav-name"> ({airline.name})</span> <ArrowRight size={16} />
             </Link>
           ) : (
-            <Link className="btn" href="/onboarding?quick=1">
-              <span className="nav-label">Chơi nhanh miễn phí</span> <ArrowRight size={16} />
+            <Link className="btn" href="/login">
+              <span className="nav-label">Chơi miễn phí</span> <ArrowRight size={16} />
             </Link>
           )}
         </div>
@@ -107,7 +107,7 @@ export default function Home() {
             <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
               <Link
                 className="btn"
-                href={mounted && hydrate && airline ? '/dashboard' : '/onboarding?quick=1'}
+                href={mounted && hydrate && airline ? '/dashboard' : '/login'}
                 style={{
                   padding: '14px 28px',
                   fontSize: 16,
@@ -116,7 +116,7 @@ export default function Home() {
                   fontWeight: 800,
                 }}
               >
-                {mounted && hydrate && airline ? 'Vào phòng điều hành' : 'Chơi nhanh miễn phí'} <ArrowRight size={18} />
+                {mounted && hydrate && airline ? 'Vào phòng điều hành' : 'Đăng ký để chơi miễn phí'} <ArrowRight size={18} />
               </Link>
               <Link className="btn ghost" href="/tutorial" style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}>
                 Xem hướng dẫn 5 phút

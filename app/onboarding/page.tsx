@@ -33,9 +33,15 @@ export default function Onboarding() {
   const isNameValid = name.trim().length >= 3 && name.trim().length <= 24;
 
   const handleSubmit = () => { if (!isNameValid) return; start({ name: name.trim(), color, icon, base: 'SGN', difficulty }); router.push('/dashboard'); };
-  const handleQuickStart = () => { start({name:'Cánh Én Việt',color:colors[0],icon:icons[0],base:'SGN',difficulty:'de'}); router.push('/dashboard'); };
+  // Không còn chế độ khách: phải đăng nhập thì mới tạo được hãng bay, nên
+  // `?quick=1` cũng bị chặn. Để người dùng tới từ link cũ không rơi vào
+  // trang trắng.
   const quickHandled = useRef(false);
-  useEffect(() => { if (window.location.search.includes('quick=1') && !quickHandled.current) { quickHandled.current=true; handleQuickStart(); } }, []);
+  useEffect(() => {
+    if (!window.location.search.includes('quick=1') || quickHandled.current) return;
+    quickHandled.current = true;
+    router.replace('/login');
+  }, [router]);
 
   const selectedBaseAirport = airports.find((a) => a.code === base);
 
@@ -68,7 +74,6 @@ export default function Onboarding() {
           <p className="sub">Bước {step} trên 2 · Bắt đầu hành trình chinh phục không phận Việt Nam</p>
         </div>
 
-        <button type="button" className="btn quick-btn" onClick={handleQuickStart}><Sparkles size={17}/> Chơi nhanh <span>Bắt đầu với hãng Cánh Én Việt</span><ArrowRight size={17}/></button>
         {/* Step indicator */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 30 }}>
           {[1, 2].map((n) => (

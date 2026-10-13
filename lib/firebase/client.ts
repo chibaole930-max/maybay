@@ -1,9 +1,9 @@
 /**
  * Firebase client — chỉ phần Authentication.
  *
- * Chỉ khởi tạo khi biến môi trường có đủ. Lý do: app vẫn phải chạy được ở
- * chế độ khách (không cần đăng nhập) và ở môi trường local khi chưa cấu hình
- * Firebase — `initializeApp` với config rỗng sẽ ném lỗi ngay khi import.
+ * Chỉ khởi tạo khi biến môi trường có đủ. Lý do: app phải chạy được ở môi
+ * trường local khi chưa cấu hình Firebase, và `initializeApp` với config rỗng
+ * sẽ ném lỗi ngay khi import.
  */
 
 import { getApp, getApps, initializeApp } from 'firebase/app';

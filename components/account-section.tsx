@@ -66,9 +66,9 @@ export function AccountSection() {
     return (
       <div>
         <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
-          Bạn đang chơi ở chế độ khách — tiến độ chỉ nằm trong trình duyệt này.
-          Đăng nhập để lưu tiến độ lên máy chủ, chơi lại trên điện thoại hoặc máy tính khác,
-          và tham gia bảng xếp hạng, chợ máy bay cũ, liên minh.
+          Bạn chưa đăng nhập. Muốn chơi và lưu tiến độ lên máy chủ thì phải có tài khoản —
+          nhờ vậy bạn chơi lại được trên điện thoại hoặc máy tính khác, và tham gia được
+          bảng xếp hạng, chợ máy bay cũ, liên minh.
         </p>
         <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
           <Link className="btn" href="/login"><LogIn size={16} /> Đăng nhập / Đăng ký</Link>
