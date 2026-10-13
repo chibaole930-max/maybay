@@ -1,6 +1,6 @@
 import { randomUUID, randomBytes } from 'node:crypto';
 import { kvGetJson, kvGetJsonWithTtl, kvMutateJson, kvSetJsonEx, kvSetJsonNx, kvDel, storageMode } from './kv';
-import { hashPassword, verifyPassword, checkPassword, checkUsername, checkDisplayName, normalizeUsername, normalizeDisplayName } from './password';
+import { checkDisplayName, normalizeEmail, normalizeDisplayName } from './accountNames';
 // `inbox` chỉ import *kiểu* `Pilot` nên không có vòng import lúc chạy.
 import { pushToMany } from './inbox';
 
@@ -49,6 +49,13 @@ export interface Pilot {
   updatedAt: number;
   /** Ten dang nhap — chi co o tai khoan that. */
   username?: string;
+  /** Email dang dung Firebase. */
+  email?: string;
+  /**
+   * UID cua tai khoan Firebase. Day la khoa lien ket — may chu dung no de biet
+   * token cua ai. Khong co `salt`/`hash` nua: mat khau nam trong Firebase.
+   */
+  firebaseUid?: string;
   salt?: string;
   hash?: string;
   createdAt?: number;
@@ -210,11 +217,17 @@ export function mutateDB<R>(mutate: (db: DB) => R | Promise<R>): Promise<R> {
   });
 }
 
-/** Ban thong tin an toan de tra ve client (khong bao gio lo salt/hash). */
+/** Ban thong tin an toan de tra ve client (khong bao gio lo uid/salt/hash). */
 export const publicPilot = (p: Pilot) => ({
   id: p.id, code: p.code, name: p.name, value: p.value, level: p.level,
   planes: p.planes, routes: p.routes, reputation: p.reputation, updatedAt: p.updatedAt,
   username: p.username, createdAt: p.createdAt,
+});
+
+/** Chi tieu dang nhap: dung cho phien va hien thi tren man hinh. */
+export const accountOf = (p: Pilot) => ({
+  id: p.id, code: p.code, name: p.name,
+  username: p.username, email: p.email, createdAt: p.createdAt,
 });
 
 export type PublicPilot = ReturnType<typeof publicPilot>;
@@ -250,97 +263,102 @@ export async function resolveSession(token: string): Promise<Pilot | null> {
   return pilot;
 }
 
-export type RegisterResult =
-  | { ok: true; pilot: Pilot; token: string }
-  | { ok: false; error: string; field?: 'username' | 'password' | 'name' };
+/**
+ * Mo tai khoan hoac tra ve tai khoan da co, tu mot danh tinh Firebase da xac thuc.
+ *
+ * Firebase lo phan mat khau (hash scrypt, rate limit, khoa tai khoan) — day la
+ * thu Firebase lam tot hon phien ban tu viet. Server chi con hai viec: kiem
+ * tra ID token hop le, va gan tai khoan game cho `uid` do.
+ *
+ * Khong luu `salt`/`hash` nua: mat khau nam trong Firebase, khong bao gio nam
+ * trong `vat:db`. Do la mot phan ly nhanh dep hon truoc.
+ */
+export type SyncResult =
+  | { ok: true; pilot: Pilot; token: string; created: boolean }
+  | { ok: false; error: string; field?: 'email' | 'name' };
 
-/** Dang ky tai khoan that: ten dang nhap + mat khau + ten hang bay. */
-export async function registerAccount(input: { username: string; password: string; name: string }): Promise<RegisterResult> {
-  // Dung ham kiem tra trong `password.ts` de hieu luc dang ky va doi mat khau
-  // luon cung mot bo luat — truoc day hai noi tu viet rieng va da lech nhau.
-  const username = normalizeUsername(input.username);
-  const name = normalizeDisplayName(input.name);
+/** Ten hien thi lay tu Firebase neu nguoi choi chua dat ten hang bay. */
+const nameFromIdentity = (displayName: string | null, email: string): string => {
+  const raw = normalizeDisplayName(displayName || email.split('@')[0] || 'Hang bay');
+  // Firebase chap nhan ten rat ngan hoac rat dai; ep ve khoang ma game dung.
+  return raw.length < 3 ? `Hang ${raw}`.slice(0, 32) : raw.slice(0, 32);
+};
 
-  const usernameError = checkUsername(username);
-  if (usernameError) return { ok: false, error: usernameError, field: 'username' };
-  const passwordError = checkPassword(String(input.password || ''));
-  if (passwordError) return { ok: false, error: passwordError, field: 'password' };
-  const nameError = checkDisplayName(name);
-  if (nameError) return { ok: false, error: nameError, field: 'name' };
+export async function syncFirebaseIdentity(identity: {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+}, requestedName?: string): Promise<SyncResult> {
+  const email = identity.email ? normalizeEmail(identity.email) : '';
+  const db = await readDB();
 
-  // Giu cho ten dang nhap truoc — atomic, 2 nguoi cung ten chi 1 nguoi vao duoc.
+  // 1. Tai khoan da gan `uid` nay — chi la cap lai phien dang nhap.
+  const existing = db.pilots.find((p) => p.firebaseUid === identity.uid);
+  if (existing) {
+    const token = await createSession(existing.id, existing.authEpoch ?? 0);
+    return { ok: true, pilot: existing, token, created: false };
+  }
+
+  // 2. Chua co `uid`, nhung co tai khoan cu cung email — gan `uid` vao cho
+  //    tai khoan do. Truong hop nay xay ra khi nguoi choi tai khoan cu, hoac khi
+  //    tai khoan duoc tao khi dang nhap nhung token cu bi xoa.
+  const byEmail = email ? db.pilots.find((p) => p.email === email) : undefined;
+  if (byEmail) {
+    const linked = await mutateDB((next) => {
+      const target = next.pilots.find((p) => p.id === byEmail.id);
+      if (!target) return byEmail;
+      target.firebaseUid = identity.uid;
+      target.email = email;
+      target.updatedAt = Date.now();
+      return target;
+    });
+    const token = await createSession(linked.id, linked.authEpoch ?? 0);
+    return { ok: true, pilot: linked, token, created: false };
+  }
+
+  // 3. Tai khoan moi.
+  const requested = requestedName ? normalizeDisplayName(requestedName) : '';
+  if (requestedName && checkDisplayName(requested)) {
+    return { ok: false, error: checkDisplayName(requested)!, field: 'name' };
+  }
+  const name = requested || nameFromIdentity(identity.displayName, email || 'hangbay');
   const pilotId = randomUUID();
-  const reserved = await kvSetJsonNx(USERNAME_KEY(username), pilotId);
-  if (!reserved) return { ok: false, error: 'Ten dang nhap da co nguoi dung. Chon ten khac nhe.', field: 'username' };
-
-  const { salt, hash } = await hashPassword(String(input.password));
   const code = `VNA${randomBytes(2).toString('hex').toUpperCase().slice(0, 4)}`;
   const pilot: Pilot = {
     id: pilotId, code, name, value: 0, level: 1, planes: 0, routes: 0, reputation: 70,
-    updatedAt: Date.now(), username, salt, hash, createdAt: Date.now(),
+    updatedAt: Date.now(), username: email || undefined, email: email || undefined,
+    firebaseUid: identity.uid, createdAt: Date.now(),
   };
 
-  try {
-    await kvMutateJson<DB, void>(DB_KEY, freshDB(), (raw) => {
-      const db = normalize(raw);
-      db.pilots.push(pilot);
-      return { next: db, result: undefined };
-    });
-  } catch (err) {
-    // Ghi DB loi thi tra lai ten dang nhap de khong bi chiem o uong.
-    await kvDel(USERNAME_KEY(username));
-    throw err;
-  }
+  // Ghi trong mot luot va tra ve ban ghi co that. Request song song co the da
+  // cung tao tai khoan cho `uid` nay trong khoang thoi gian tu `readDB` den luc
+  // ghi — neu khong kiem lai, se tao ra hai tai khoan cho cung mot nguoi.
+  const final = await mutateDB((next) => {
+    const clash = next.pilots.find((p) => p.firebaseUid === identity.uid);
+    if (clash) return clash;
+    next.pilots.push(pilot);
+    return pilot;
+  });
 
-  const token = await createSession(pilot.id, pilot.authEpoch ?? 0);
-  return { ok: true, pilot, token };
-}
-
-export type LoginResult =
-  | { ok: true; pilot: Pilot; token: string }
-  | { ok: false; error: string; field?: 'username' | 'password' };
-
-export async function loginWithPassword(input: { username: string; password: string }): Promise<LoginResult> {
-  const username = normalizeUsername(input.username);
-  const password = String(input.password || '');
-  if (!username) return { ok: false, error: 'Nhap ten dang nhap.', field: 'username' };
-  if (!password) return { ok: false, error: 'Nhap mat khau.', field: 'password' };
-
-  const db = await readDB();
-  const pilot = db.pilots.find((p) => p.username === username);
-  // Cung mot thong bao cho ca "khong co tai khoan" va "sai mat khau" de khong lo
-  // bi nguoi khac do xem ten dang nhap nao ton tai.
-  if (!pilot || !pilot.username) return { ok: false, error: 'Ten dang nhap hoac mat khau khong dung.', field: 'password' };
-  if (!pilot.salt || !pilot.hash || !(await verifyPassword(password, pilot.salt, pilot.hash))) {
-    return { ok: false, error: 'Ten dang nhap hoac mat khau khong dung.', field: 'password' };
-  }
-  const token = await createSession(pilot.id, pilot.authEpoch ?? 0);
-  return { ok: true, pilot, token };
+  const token = await createSession(final.id, final.authEpoch ?? 0);
+  return { ok: true, pilot: final, token, created: final.id === pilot.id };
 }
 
 /**
- * Doi mat khau. Tang `authEpoch` nen **moi phien dang nhap cu cua tai khoan deu
- * mat hieu luc**, ke ca tren may khac — neu khong, nguoi bi chiem cookie van
- * vao duoc game sau khi chu the doi mat khau.
+ * Doi mat khau cua nguoi dang dang nhap. Tang `authEpoch` nen **moi phien dang
+ * nhap cu cua tai khoan deu mat hieu luc**, ke ca tren may khac — neu khong,
+ * nguoi bi chiem cookie van vao duoc game sau khi chu the doi mat khau.
+ *
+ * Do Firebase giu mat khau, ham nay KHONG doi mat khau. No chi dung viec thu hoi
+ * phien; lenh doi that do client goi `updatePassword()` cua Firebase truoc.
  */
-export async function changePassword(pilot: Pilot, current: string, next: string): Promise<{ ok: true; sessionEpoch: number } | { ok: false; error: string }> {
-  if (!pilot.salt || !pilot.hash || !(await verifyPassword(String(current || ''), pilot.salt, pilot.hash))) {
-    return { ok: false, error: 'Mat khau hien tai khong dung.' };
-  }
-  const problem = checkPassword(String(next || ''));
-  if (problem) return { ok: false, error: problem };
-  if (next === current) return { ok: false, error: 'Mat khau moi phai khac mat khau hien tai.' };
-
-  const { salt, hash } = await hashPassword(next);
-  const epoch = await kvMutateJson<DB, number>(DB_KEY, freshDB(), (raw) => {
-    const db = normalize(raw);
+export async function revokeSessions(pilot: Pilot): Promise<{ ok: true; sessionEpoch: number } | { ok: false; error: string }> {
+  const epoch = await mutateDB((db) => {
     const target = db.pilots.find((p) => p.id === pilot.id);
-    if (!target) return { next: db, result: 0 };
-    target.salt = salt;
-    target.hash = hash;
+    if (!target) return 0;
     target.authEpoch = (target.authEpoch ?? 0) + 1;
     target.passwordChangedAt = Date.now();
-    return { next: db, result: target.authEpoch };
+    return target.authEpoch;
   });
   return { ok: true, sessionEpoch: epoch };
 }

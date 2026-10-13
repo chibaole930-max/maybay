@@ -3,20 +3,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Eye, EyeOff, KeyRound, Plane, ShieldCheck, UserPlus } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Eye, EyeOff, KeyRound, Plane, ShieldCheck, UserPlus } from 'lucide-react';
 import { netClient } from '@/lib/net/netClient';
+import { firebaseConfigured, firebaseMissingEnv } from '@/lib/firebase/client';
 import { useGameStore } from '@/store/useGameStore';
 
 type Tab = 'login' | 'register';
-type Errors = Partial<Record<'username' | 'password' | 'confirm' | 'name' | 'form', string>>;
+type Errors = Partial<Record<'email' | 'password' | 'confirm' | 'name' | 'form', string>>;
 
-const USERNAME_HINT = '3-20 ký tự, chỉ gồm chữ thường, số và . _ -';
+const EMAIL_HINT = 'Email dùng để đăng nhập và khôi phục tài khoản';
 
 export default function LoginPage() {
   const router = useRouter();
   const airline = useGameStore((s) => s.airline);
   const [tab, setTab] = useState<Tab>('login');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -42,19 +43,17 @@ export default function LoginPage() {
     return () => { stop = true; };
   }, [router]);
 
-  const usernameError = useMemo(() => {
-    const value = username.trim().toLowerCase();
+  const emailError = useMemo(() => {
+    const value = email.trim();
     if (!value) return '';
-    if (value.length < 3 || value.length > 20) return 'Tên đăng nhập phải từ 3 đến 20 ký tự.';
-    if (!/^[a-z0-9._-]+$/.test(value)) return 'Chỉ gồm chữ thường, số và . _ -';
-    if (/^[._-]|[._-]$/.test(value)) return 'Không được bắt đầu hoặc kết thúc bằng . _ -';
+    // Cùng cách kiểm với Firebase: tránh gửi đi rồi mới bị từ chối.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Email không hợp lệ.';
     return '';
-  }, [username]);
+  }, [email]);
 
   const passwordError = useMemo(() => {
     if (!password) return '';
     if (password.length < 6) return 'Mật khẩu cần tối thiểu 6 ký tự.';
-    if (password.length > 72) return 'Mật khẩu tối đa 72 ký tự.';
     return '';
   }, [password]);
 
@@ -67,7 +66,7 @@ export default function LoginPage() {
 
   const confirmError = useMemo(() => {
     if (!confirm) return '';
-    return confirm === password ? '' : 'Mật khẩu nhập lại chưa khớp.';
+    return confirm === password ? '' : 'Mật khẩu nhận lại chưa khớp.';
   }, [confirm, password]);
 
   const switchTab = (next: Tab) => {
@@ -80,7 +79,7 @@ export default function LoginPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     const next: Errors = {};
-    if (usernameError) next.username = usernameError;
+    if (emailError) next.email = emailError;
     if (passwordError) next.password = passwordError;
     if (tab === 'register') {
       if (nameError) next.name = nameError;
@@ -92,15 +91,16 @@ export default function LoginPage() {
     setBusy(true);
     setErrors({});
     const result = tab === 'login'
-      ? await netClient.login(username.trim().toLowerCase(), password)
-      : await netClient.register({ username: username.trim().toLowerCase(), password, name: name.trim() });
+      ? await netClient.firebaseSignIn(email.trim(), password)
+      : await netClient.firebaseRegister(email.trim(), password, name.trim());
 
     setBusy(false);
     if (!result.ok) {
-      // Server là nguồn duy nhất biết tên đăng nhập đã bị chiếm chưa.
+      // Firebase báo lỗi bằng mã kỹ thuật; `netClient` đã dịch sang tiếng Việt.
       const message = result.error;
-      if (/ten dang nhap/i.test(message)) setErrors({ username: message });
-      else if (/mat khau|khong dung/i.test(message)) setErrors({ password: message });
+      if (/email/i.test(message)) setErrors({ email: message });
+      else if (/mật khẩu|đăng nhập lại/i.test(message)) setErrors({ password: message });
+      else if (/tên hãng bay/i.test(message)) setErrors({ name: message });
       else setErrors({ form: message });
       return;
     }
@@ -133,8 +133,18 @@ export default function LoginPage() {
           <h1 className="title" style={{ fontSize: 22 }}>
             {tab === 'login' ? 'Đăng nhập tài khoản' : 'Tạo tài khoản mới'}
           </h1>
-          <p className="sub">{tab === 'login' ? 'Vào lại hãng bay của bạn, trên mọi thiết bị' : 'Một tài khoản giữ trọn tiến độ của bạn'}</p>
+          <p className="sub">{tab === 'login' ? 'Vào lại hãng bay của bạn, trên mọi thiết khoản' : 'Một tài khoản giữ trọn tiến độ của bạn'}</p>
         </div>
+
+        {!firebaseConfigured && (
+          <div className="badge danger" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 16, lineHeight: 1.5, fontWeight: 400 }}>
+            <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+            <span>
+              Chưa cấu hình Firebase — đăng nhập tạm thời không dùng được. Thiếu:{' '}
+              <code>{firebaseMissingEnv.join(', ')}</code>
+            </span>
+          </div>
+        )}
 
         <div className="seg-tabs">
           {([['login', 'Đăng nhập', KeyRound], ['register', 'Đăng ký', UserPlus]] as const).map(([id, label, Icon]) => (
@@ -168,20 +178,21 @@ export default function LoginPage() {
           )}
 
           <div style={{ marginBottom: 16 }}>
-            <label className="label" htmlFor="username">Tên đăng nhập</label>
+            <label className="label" htmlFor="email">Email</label>
             <input
-              id="username"
+              id="email"
               className="input"
-              value={username}
-              maxLength={20}
-              placeholder="vidu.canh.en"
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
+              type="email"
+              value={email}
+              maxLength={120}
+              placeholder="vidu@hangbay.vn"
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               autoCapitalize="none"
               spellCheck={false}
             />
-            {(errors.username || usernameError) && <FieldError message={errors.username || usernameError} />}
-            {!usernameError && !errors.username && <Hint text={USERNAME_HINT} />}
+            {(errors.email || emailError) && <FieldError message={errors.email || emailError} />}
+            {!emailError && !errors.email && <Hint text={EMAIL_HINT} />}
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -230,15 +241,15 @@ export default function LoginPage() {
             <p className="badge danger" style={{ display: 'block', marginBottom: 14, textAlign: 'center' }}>{errors.form}</p>
           )}
 
-          <button className="btn" type="submit" disabled={busy} style={{ width: '100%', marginTop: 4 }}>
+          <button className="btn" type="submit" disabled={busy || !firebaseConfigured} style={{ width: '100%', marginTop: 4 }}>
             {busy ? 'Đang xử lý…' : tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'} <ArrowRight size={16} />
           </button>
         </form>
 
         <p className="muted" style={{ fontSize: 12, marginTop: 18, display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.6 }}>
           <ShieldCheck size={15} style={{ flexShrink: 0, marginTop: 2 }} />
-          Mật khẩu được hash bằng scrypt trước khi lưu. Phiên đăng nhập nằm trong cookie
-          httpOnly nên trang web khác đọc không được.
+          Mật khẩu do Firebase quản lý và không bao giờ tới máy chủ game. Máy chủ chỉ
+          nhận token đã ký rồi cấp cookie httpOnly nên trang khác đọc không được.
         </p>
 
         <div style={{ borderTop: '1px solid var(--line)', marginTop: 18, paddingTop: 16, textAlign: 'center' }}>

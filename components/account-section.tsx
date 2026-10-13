@@ -50,10 +50,10 @@ export function AccountSection() {
     setBusy(true);
     setError('');
     setMessage('');
-    const result = await netClient.changePassword(current, next);
+    const result = await netClient.firebaseChangePassword(current, next);
     setBusy(false);
     if (!result.ok) { setError(result.error || 'Đổi mật khẩu thất bại.'); return; }
-    setMessage('Đã đổi mật khẩu.');
+    setMessage('Đã đổi mật khẩu. Các phiên đăng nhập cũ đã bị thu hồi.');
     setCurrent('');
     setNext('');
   };
@@ -85,7 +85,7 @@ export function AccountSection() {
         </span>
         <b style={{ fontSize: 14 }}>{online.account.name}</b>
         <span className="muted" style={{ fontSize: 12 }}>
-          @{online.account.username} · mã {online.account.code}
+          {online.account.email || online.account.username} · mã {online.account.code}
         </span>
       </div>
 
@@ -132,6 +132,9 @@ export function AccountSection() {
             Cập nhật
           </button>
         </div>
+        <p className="muted" style={{ fontSize: 11, marginTop: 8 }}>
+          Sau khi đổi, mọi phiên đăng nhập cũ (kể cả trên máy khác) đều bị đăng xuất.
+        </p>
         {error && <p style={{ color: '#e84b3c', fontSize: 12, marginTop: 8 }}>{error}</p>}
         {message && <p style={{ color: '#12a678', fontSize: 12, marginTop: 8 }}>{message}</p>}
       </form>

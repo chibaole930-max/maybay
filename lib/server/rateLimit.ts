@@ -88,14 +88,12 @@ async function remember(key: string): Promise<void> {
 }
 
 export const rules: Record<string, Rule> = {
-  /** Do mat khau ton tai, nen giu chat — dem ca lan thanh cong. */
-  login: { limit: 20, windowSeconds: 300 },
-  // Dang ky chi ngan tao rac tai khoan, khong chan duoc brute force mat khau, nen
-  // han rong — nhieu nguoi trong cung ca quan (trường, van phong) dùng chung IP.
-  register: { limit: 20, windowSeconds: 3600 },
-  changePassword: { limit: 10, windowSeconds: 3600 },
   /** Ghi tin: chat, len tin rao, them san bay. */
   write: { limit: 20, windowSeconds: 60 },
   /** Cap nhat chi so BXH — client poll nhieu nen han rong hon. */
   stats: { limit: 120, windowSeconds: 60 },
+  /** Đổi phiên đăng nhập từ ID token — nhẹ nhưng vẫn chặn spam token hỏng. */
+  session: { limit: 30, windowSeconds: 60 },
+  /** Thu hoi phien sau khi doi mat khau. */
+  changePassword: { limit: 10, windowSeconds: 3600 },
 };

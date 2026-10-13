@@ -1,6 +1,8 @@
 .next/
 node_modules/
 .env.local
+# Mẫu biến môi trường thì commit được (không chứa giá trị thật).
+!.env.local.example
 *.tsbuildinfo
 
 # Kho KV khi chạy local (không dùng Vercel KV). Trên Vercel, KV_REST_API_URL
