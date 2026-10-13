@@ -193,9 +193,15 @@ body {
 }
 
 .btn.ghost {
-  background: transparent;
-  color: var(--text);
-  box-shadow: none;
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bd);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.btn.ghost:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
 }
 
 .btn.danger {
@@ -2751,5 +2757,651 @@ input[type='range'] {
 @media (max-width: 760px) {
   .route-overview-layout {
     gap: 12px;
+  }
+}
+
+/* ================================================== 13. Airports + map */
+.hub-banner {
+  background: var(--surface);
+  border: var(--bd);
+  box-shadow: var(--sh-1);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--violet);
+  border-right: var(--bd-sm);
+}
+
+.hub-ic {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 14px;
+  background: var(--violet);
+  color: #fff;
+  border: var(--bd);
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  box-shadow: var(--sh-1);
+}
+
+.airport-code {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.airport-locked {
+  opacity: 0.72;
+}
+
+.airport-locked::after {
+  content: 'Khu vực sẽ mở khi bạn lên cấp';
+  display: block;
+  color: var(--muted);
+  font-size: 10.5px;
+  margin-top: 8px;
+}
+
+/* -------------------------------------------------- airline map chrome */
+.real-map-card {
+  padding: 16px;
+  min-width: 0;
+}
+
+.real-map-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.real-map-heading .section-title {
+  font-family: var(--font-display);
+  margin: 3px 0;
+}
+
+.real-map-heading p {
+  font-size: 11px;
+}
+
+.real-map-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.real-map-actions .btn {
+  font-size: 11px;
+}
+
+.real-map-regions {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0 10px;
+  scrollbar-width: none;
+}
+
+.real-map-regions::-webkit-scrollbar {
+  display: none;
+}
+
+.real-map-regions .btn {
+  white-space: nowrap;
+  flex: none;
+}
+
+.real-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(230px, 1fr);
+  gap: 12px;
+  min-height: 510px;
+}
+
+.leaflet-map-wrap {
+  min-width: 0;
+  min-height: 510px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border: var(--bd);
+  box-shadow: var(--sh-1);
+}
+
+.leaflet-game-map {
+  width: 100%;
+  height: 510px;
+  background: var(--surface-sunken);
+  z-index: 1;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  border: var(--bd);
+  box-shadow: var(--sh-1);
+}
+
+.real-map-expanded {
+  position: fixed !important;
+  z-index: 150 !important;
+  inset: 10px !important;
+  overflow: auto !important;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5) !important;
+}
+
+.real-map-expanded .real-map-layout {
+  flex: 1;
+  min-height: 0;
+}
+
+.real-map-expanded .leaflet-map-wrap,
+.real-map-expanded .leaflet-game-map {
+  height: 100%;
+  min-height: 400px;
+}
+
+.real-map-expanded .live-flight-panel {
+  max-height: calc(100vh - 150px);
+}
+
+.live-plane-marker {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--violet-deep);
+  font-size: 26px;
+  filter: drop-shadow(0 2px 3px rgba(255, 255, 255, 0.9));
+  z-index: 700 !important;
+}
+
+.live-plane-marker span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  box-shadow: var(--sh-1);
+  transform-origin: center;
+}
+
+.airport-dot {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.airport-dot span {
+  display: grid;
+  place-items: center;
+  min-width: 29px;
+  height: 21px;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  outline: 1.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--violet);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 800;
+  box-shadow: var(--sh-1);
+}
+
+.airport-dot-locked span {
+  background: var(--muted);
+}
+
+.leaflet-route-flow {
+  animation: route-dash 1.2s linear infinite;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.65));
+}
+
+@keyframes route-dash {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
+.live-flight-panel {
+  min-width: 0;
+  max-height: 510px;
+  overflow-y: auto;
+  padding: 12px 14px;
+  border: var(--bd);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.live-flight-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px dashed var(--line);
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.live-flight-title svg {
+  color: var(--violet-deep);
+}
+
+.live-flight-title > span {
+  display: grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  margin-left: auto;
+  border-radius: 999px;
+  border: var(--bd-sm);
+  background: var(--lime);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.live-flight-row {
+  padding: 12px 0;
+  border-bottom: 1.5px dashed var(--line);
+}
+
+.live-flight-row:last-child {
+  border-bottom: 0;
+}
+
+.live-flight-route {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.live-flight-route > b {
+  font-family: var(--font-display);
+}
+
+.live-flight-route > span {
+  color: var(--muted);
+}
+
+.flight-progress {
+  height: 8px;
+  margin: 9px 0 5px;
+  background: var(--surface-sunken);
+  border: 1.5px solid var(--ink);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.flight-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: repeating-linear-gradient(-45deg, var(--violet) 0 8px, #a78bfa 8px 16px);
+}
+
+.live-flight-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.live-flight-row .live-flight-payout {
+  margin-top: 5px;
+  color: var(--success-ink);
+  font-weight: 700;
+}
+
+.empty-flights {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 45px 12px;
+  color: var(--muted);
+}
+
+.empty-flights > span {
+  font-size: 28px;
+}
+
+.empty-flights b {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.empty-flights small {
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.real-map-teasers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.real-map-teasers > div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: var(--bd-sm);
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+.real-map-teasers b {
+  font-size: 10.5px;
+}
+
+.real-map-teasers small {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.real-map-teasers .locked-region {
+  opacity: 0.5;
+  filter: saturate(0.4);
+}
+
+/* ------------------------------------------------- airport picker chrome */
+.airport-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.airport-picker-map {
+  position: relative;
+  min-width: 0;
+}
+
+.leaflet-airport-picker {
+  width: 100%;
+  height: 440px;
+  border-radius: 14px;
+  background: var(--surface-sunken);
+  border: var(--bd);
+  box-shadow: var(--sh-1);
+  z-index: 1;
+}
+
+.airport-picker-loading {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  height: 440px;
+  border-radius: 14px;
+  border: var(--bd-sm);
+  background: var(--surface-subtle);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.airport-picker-hint {
+  position: absolute;
+  z-index: 500;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: var(--bd-sm);
+  background: var(--ink);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: var(--sh-1);
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: calc(100% - 24px);
+}
+
+.airport-picker-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-subtle);
+  border: var(--bd);
+  box-shadow: var(--sh-1);
+  min-width: 0;
+}
+
+.airport-picker-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.airport-picker-head b {
+  display: block;
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+.airport-picker-head small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.airport-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.airport-picker-field input {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: var(--bd);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+}
+
+.airport-picker-field input:focus {
+  box-shadow: 3px 3px 0 var(--violet);
+}
+
+.airport-picker-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.airport-picker-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1.5px dashed var(--line);
+  flex-wrap: wrap;
+}
+
+.airport-picker-foot .btn {
+  white-space: nowrap;
+}
+
+.airport-pin-existing {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.airport-pin-existing span {
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+  height: 20px;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  outline: 1.5px solid var(--ink);
+  border-radius: 11px;
+  background: var(--violet);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 800;
+  box-shadow: var(--sh-1);
+}
+
+.airport-pin-new {
+  border: 0 !important;
+  background: transparent !important;
+  font-size: 26px;
+  color: var(--danger);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  z-index: 700 !important;
+}
+
+.airport-picker .leaflet-popup-content {
+  margin: 9px 11px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  border: var(--bd);
+  box-shadow: var(--sh-1);
+}
+
+/* ------------------------------------------------- airports/map responsive */
+@media (max-width: 900px) {
+  .real-map-layout {
+    grid-template-columns: minmax(0, 1fr) 230px;
+  }
+
+  .leaflet-game-map {
+    height: 460px;
+  }
+
+  .leaflet-map-wrap {
+    min-height: 460px;
+  }
+
+  .live-flight-panel {
+    max-height: 460px;
+  }
+
+  .airport-picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .leaflet-airport-picker,
+  .airport-picker-loading {
+    height: 320px;
+  }
+}
+
+@media (min-width: 761px) {
+  .map-expand {
+    display: none !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .leaflet-airport-picker {
+    height: 54vh;
+    min-height: 340px;
+  }
+}
+
+@media (max-width: 700px) {
+  .real-map-card {
+    padding: 11px;
+  }
+
+  .real-map-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .real-map-heading .section-title {
+    font-size: 15px;
+  }
+
+  .real-map-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .real-map-layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .leaflet-map-wrap,
+  .leaflet-game-map {
+    height: 54vh;
+    min-height: 360px;
+  }
+
+  .live-flight-panel {
+    max-height: 210px;
+  }
+
+  .real-map-expanded .real-map-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .real-map-expanded .leaflet-map-wrap,
+  .real-map-expanded .leaflet-game-map {
+    height: 58vh;
+    min-height: 310px;
+  }
+
+  .real-map-teasers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
