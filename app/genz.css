@@ -2386,3 +2386,370 @@ th {
     gap: 8px;
   }
 }
+
+/* =================================================== 12. Fleet + Routes */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  border: var(--bd);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+
+.chip:active:not(.active) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.chip.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--lime);
+}
+
+.tile-ic {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--blue-light);
+  color: var(--violet-deep);
+  border: var(--bd);
+  box-shadow: var(--sh-1);
+}
+
+.text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  color: var(--violet-deep);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+.text-btn.danger {
+  color: var(--danger);
+}
+
+.text-btn.dim {
+  color: var(--muted);
+}
+
+.sub-card {
+  background: var(--surface-subtle);
+  border: var(--bd-sm);
+  border-radius: var(--r);
+  padding: 16px;
+}
+
+.kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1.5px dashed var(--line);
+  font-size: 13px;
+}
+
+.kv:last-child {
+  border-bottom: 0;
+}
+
+.kv > span:first-child {
+  color: var(--muted);
+}
+
+.kv > b {
+  text-align: right;
+  font-family: var(--font-display);
+}
+
+/* --------------------------------------------------------- fleet cards */
+.plane-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.plane-card h3 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.spec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px 0;
+  margin: 10px 0;
+  border-top: var(--bd-sm);
+  border-bottom: var(--bd-sm);
+  font-size: 12px;
+}
+
+.spec-grid b {
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+.recommend-chip {
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: var(--bd-sm);
+  background: var(--blue-light);
+  color: var(--violet-deep);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.recommend-chip b {
+  display: block;
+  font-size: 12.5px;
+}
+
+.recommend-chip small {
+  font-size: 11.5px;
+  opacity: 0.85;
+}
+
+.sell-value {
+  background: var(--lime);
+  color: var(--ink);
+  border: var(--bd);
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: var(--sh-1);
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 800;
+  text-align: center;
+  margin: 14px 0;
+}
+
+/* -------------------------------------------------------- routes page */
+.route-overview-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+.map-loading {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  color: var(--muted);
+  font-size: 13px;
+  border: var(--bd-sm);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+
+.warn-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--warn-soft);
+  border: var(--bd);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  border-radius: var(--r);
+  color: var(--warn-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  box-shadow: var(--sh-1);
+}
+
+.warn-card > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.route-card {
+  padding: 14px;
+}
+
+.route-card.inactive {
+  background: var(--surface-subtle);
+  border-style: dashed;
+}
+
+.price-watch-card {
+  margin-top: 18px;
+}
+
+.price-zones {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin: 12px 0;
+}
+
+.price-zones span {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 7px 4px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ink);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.price-zones .selected.green {
+  background: var(--lime);
+  color: var(--ink);
+}
+
+.price-zones .selected.yellow {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+.price-zones .selected.orange,
+.price-zones .selected.red {
+  background: var(--danger);
+  color: #fff;
+}
+
+.price-sensitivity {
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: var(--bd-sm);
+  font-size: 11.5px;
+  line-height: 1.55;
+  background: var(--surface-subtle);
+}
+
+.price-sensitivity b {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+}
+
+.price-sensitivity.green b {
+  color: var(--success-ink);
+}
+
+.price-sensitivity.yellow b {
+  color: var(--warn-ink);
+}
+
+.price-sensitivity.orange b,
+.price-sensitivity.red b {
+  color: var(--danger);
+}
+
+.price-sensitivity span {
+  color: var(--muted);
+}
+
+.night-warning {
+  background: var(--ink);
+  color: #fff;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: var(--bd);
+  font-size: 12px;
+  line-height: 1.55;
+  margin-top: 12px;
+}
+
+.route-suggest {
+  width: 100%;
+  margin: 14px 0 6px;
+}
+
+.econ-preview {
+  background: var(--surface);
+  margin-top: 20px;
+  padding: 16px;
+  border: var(--bd);
+  border-radius: var(--r);
+  box-shadow: var(--sh-1);
+  position: relative;
+  overflow: hidden;
+}
+
+.econ-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: repeating-linear-gradient(-45deg, var(--violet) 0 10px, var(--pink) 10px 20px);
+}
+
+.econ-preview > b:first-child {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  display: block;
+  margin-bottom: 10px;
+  color: var(--violet-deep);
+}
+
+.econ-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  font-size: 12px;
+}
+
+.econ-grid b {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+}
+
+.econ-grid small {
+  display: block;
+  color: var(--muted);
+  font-size: 10.5px;
+  margin-top: 2px;
+}
+
+input[type='range'] {
+  accent-color: var(--violet);
+  width: 100%;
+  min-height: 32px;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------- fleet/routes responsive */
+@media (max-width: 760px) {
+  .route-overview-layout {
+    gap: 12px;
+  }
+}
