@@ -119,11 +119,17 @@ the auth-mocked harness before commit. Final batch deletes `v5.css`.
     Verified 15 captures, overflow 0.
 - [x] **Task 7: research + staff + community + settings** (community logic untouched)
   - Done in d31deea. Pure CSS. Verified 10 captures, overflow 0.
-- [ ] **Task 8: entry flows** (landing/onboarding/tutorial/login styles only —
+- [x] **Task 8: entry flows** (landing/onboarding/tutorial/login styles only —
     login tab owns their logic; extra care, announce in Messages first)
-- [ ] **Task 9: harden + retire v5.css + docs**
-  - Contrast/class-coverage/reduced-motion pass, full sweep, delete `v5.css` +
-    drop import, update `AGENTS.md` (R2 now points at genz.css).
+  - Done in e069534. Pure CSS (all class hooks already present). Verified:
+    landing m+d, onboarding 2 steps (state verified), login + register tab,
+    tutorial + flipped card — 8/8 correct URLs, overflow 0.
+- [x] **Task 9: harden + retire v5.css + docs**
+  - Done. Class coverage 229 tokens (modifiers paired, compounds/media-only
+    verified); 2 real gaps found and fixed (`.advanced-teaser`,
+    `.spin`); 2 duplicated sections removed (§12, §13 second copies).
+    `v5.css` deleted, import dropped — CSS now only `globals` + `leaflet` +
+    `genz`. Full sweep 24/24 + entry 8/8, overflow 0. AGENTS.md R2 updated.
 
 ## Verification evidence
 
@@ -139,4 +145,7 @@ Not run yet.
 
 ## Handoff
 
-Active. Next action: Task 1.
+All 9 tasks done and pushed (standing no-confirmation order). Screenshots for
+every batch went to Telegram for post-review; any feedback becomes follow-ups.
+Plan stays Active until the user confirms the look (eye-approval is now
+post-review per D5, not a gate).

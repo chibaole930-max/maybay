@@ -29,7 +29,9 @@ docs/plans/         Task plan đang chạy (một file cho mỗi task lớn)
 ## Repo-specific rules (R-rules — only the delta from the global standard)
 
 - **R1.** Checkout này có thể có agent khác đang sửa song song. Trước khi sửa file đầu tiên luôn chạy `git status --porcelain`; chỉ commit đúng file của mình (`git commit -- <paths>`, KHÔNG `git add -A`); không đụng vào file đang dở của người khác.
-- **R2.** CSS: `app/v5.css` sở hữu toàn bộ giao diện. Các file legacy (`v2*.css`, `v3.css`, `v4.css`) đã xóa — không tạo lại, không thêm rule vào `globals.css` ngoài tokens/reset.
+- **R2.** CSS: `app/genz.css` sở hữu toàn bộ giao diện (single light theme).
+  Các file legacy (`v5.css`, `v2*.css`, `v3.css`, `v4.css`) đã xóa — không tạo
+  lại, không thêm rule vào `globals.css` ngoài tokens/reset.
 - **R3.** Không sửa redirect `/onboarding` của `GameShell` khi chưa được duyệt: fresh load nào cũng bounce về đó vì store hydrate sau first render (bug có sẵn, đã ghi trong plan). Harness review điều hướng bằng click trong app để lách.
 - **R4.** Review chạy trên bản sao tách biệt (`/tmp/opencode/review/app`, dev `:3100`), không dùng dev `:3000` của checkout chính. Token Telegram và mọi secret chỉ nằm ở scratchpad, KHÔNG vào repo. Webhook của bot thuộc về pcbot — không `deleteWebhook`.
 - **R5.** Số tiền animation (`AnimatedMoney`) đổi độ dài chuỗi mỗi frame: mọi hàng chứa nó phải có `min-width: 0` + cắt tràn, không để trang giãn ngang.

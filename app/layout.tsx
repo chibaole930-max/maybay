@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import 'leaflet/dist/leaflet.css';
-// v5 owns the cascade: loaded last so the new design layer wins over v2–v4.
-import './v5.css';
-// genz owns the cascade over v5 while the sticker redesign migrates page by page.
+// genz is the single design layer (v5 retired at Task 9).
 import './genz.css';
 import { PwaRegister } from './pwa-register';
 
