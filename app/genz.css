@@ -4341,3 +4341,342 @@ input[type='range'] {
     justify-content: space-between;
   }
 }
+
+/* ==================================== 15. Research/Staff/Community/Settings */
+.points-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--r-pill);
+  border: var(--bd);
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 2px 2px 0 var(--ink);
+  white-space: nowrap;
+  transform: rotate(-1deg);
+}
+
+.points-pill b {
+  font-family: var(--font-display);
+}
+
+.lvl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.lvl-row.done {
+  background: var(--success-soft);
+  border-color: var(--success-ink);
+  color: var(--success-ink);
+  font-weight: 600;
+}
+
+.lvl-row.next {
+  background: var(--blue-light);
+  border-color: var(--violet-deep);
+  color: var(--violet-deep);
+  font-weight: 600;
+}
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ------------------------------------------------------------ staff */
+.hire-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: var(--bd-sm);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------- settings */
+.swatch {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  border: var(--bd);
+  cursor: pointer;
+  flex: none;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: transform 0.14s var(--ease), box-shadow 0.14s var(--ease);
+}
+
+.swatch.selected {
+  transform: scale(1.12) rotate(-3deg);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.logo-btn {
+  min-width: 46px;
+  min-height: 46px;
+  padding: 8px;
+  font-size: 20px;
+  border-radius: 12px;
+  border: var(--bd);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  flex: none;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.logo-btn.selected {
+  background: var(--lime);
+  transform: rotate(-2deg);
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-subtle);
+  border: var(--bd);
+  box-shadow: var(--sh-1);
+}
+
+.settings-toggle-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  border: var(--bd-sm);
+  background: var(--blue-light);
+  color: var(--violet-deep);
+  display: grid;
+  place-items: center;
+}
+
+.settings-toggle-copy {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.settings-toggle-copy b,
+.settings-toggle-copy small {
+  display: block;
+}
+
+.settings-toggle-copy small {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.switch {
+  width: 52px;
+  height: 30px;
+  flex: none;
+  border: var(--bd);
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  padding: 3px;
+  cursor: pointer;
+  transition: background 0.2s var(--ease);
+}
+
+.switch i {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  transition: transform 0.2s var(--ease);
+}
+
+.switch.on {
+  background: var(--lime);
+}
+
+.switch.on i {
+  transform: translateX(20px);
+}
+
+.control-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-subtle);
+  border: var(--bd-sm);
+  flex-wrap: wrap;
+}
+
+.danger-zone {
+  border-color: var(--danger) !important;
+}
+
+.danger-zone > h2 {
+  color: var(--danger) !important;
+}
+
+.reset-step {
+  margin-top: 14px;
+  padding: 16px;
+  background: var(--danger-soft);
+  border-radius: 14px;
+  border: var(--bd);
+  font-size: 12px;
+  line-height: 1.6;
+  box-shadow: var(--sh-1);
+}
+
+.reset-step.severe {
+  border-width: 3px;
+}
+
+.reset-step b:first-child {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+/* --------------------------------------------------------- community */
+.community-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.community-card {
+  padding: 20px;
+  min-width: 0;
+}
+
+.community-card h2 {
+  margin: 8px 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.community-card p {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 0;
+}
+
+.community-card > small {
+  display: block;
+  color: var(--muted);
+  margin-top: 8px;
+  font-size: 10.5px;
+}
+
+.coming-soon {
+  display: inline-block;
+  color: var(--ink);
+  background: var(--lime);
+  border: var(--bd-sm);
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 8px;
+  transform: rotate(-1deg);
+}
+
+.chat-preview {
+  margin-top: 12px;
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  border: var(--bd-sm);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--surface-subtle);
+}
+
+.market-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1.5px dashed var(--line);
+  font-size: 12px;
+}
+
+.market-row:last-child {
+  border-bottom: 0;
+}
+
+.market-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 10.5px;
+  margin-top: 3px;
+}
+
+.market-row > b:last-child {
+  font-family: var(--font-display);
+  text-align: right;
+}
+
+.season-ranks {
+  margin-top: 12px;
+}
+
+.season-ranks > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1.5px dashed var(--line);
+  font-size: 11.5px;
+}
+
+.season-ranks > div:last-child {
+  border-bottom: 0;
+}
+
+.season-ranks span {
+  color: var(--muted);
+  font-family: var(--font-display);
+}
+
+/* -------------------------------------- research/staff/community responsive */
+@media (max-width: 700px) {
+  .community-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-toggle {
+    align-items: flex-start;
+  }
+
+  .settings-toggle-copy {
+    font-size: 12px;
+  }
+}
