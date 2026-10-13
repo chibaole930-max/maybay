@@ -83,18 +83,23 @@ the auth-mocked harness before commit. Final batch deletes `v5.css`.
 
 ## Tasks
 
-- [ ] **Task 1: tokens, font, base components, single-theme cut**
+- [x] **Task 1: tokens, font, base components, single-theme cut**
   - Files: `app/genz.css` (new), `app/layout.tsx` (font + import), plus theme
     toggle removals in `components/game-shell.tsx`, `app/settings/page.tsx`
   - Build: sticker tokens (paper/ink/violet/lime/pink, 2px borders, hard
     shadows, radius scale, Baloo 2 display), skins for card/btn/badge/progress/
     input/table/type; delete theme toggle UI.
   - Verify: tsc; screenshots of a component-heavy page → eye-review; AC4.
+  - Done 2026-10-13 in 06fb010. Eye-approved by user over Telegram. Contrast
+    computed AA (muted 4.78, violet-white 5.70, pink uses ink text 5.83).
 
-- [ ] **Task 2: shell (header, nav, modals, toast)**
+- [x] **Task 2: shell (header, nav, modals, toast)**
   - Files: `components/game-shell.tsx` (markup only where needed),
     `app/genz.css`
   - Verify: screenshots incl. modal states → eye-review; AC1, AC6.
+  - Done 2026-10-13 in eaf7602 (CSS-only; no tsx change needed).
+    Eye-approved by user over Telegram. Verified: teaser/popover/level-up/
+    offline kinds isolated, overflow 0 @390px.
 
 - [ ] **Task 3: dashboard**
 - [ ] **Task 4: fleet + routes**
