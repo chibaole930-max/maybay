@@ -124,4 +124,11 @@ Acceptance criteria:
 
 ## Handoff
 
-Active. Next action: Task 1.
+Done + pushed (515628a). Fairness work complete on this tab's side; login
+tab's area untouched (verified by status + lint + build).
+
+Coordination note (for the user as bridge — tabs cannot message each other
+directly): nothing blocking needed from the login tab. Optional joint
+follow-up whenever both agree: server-side sanity checks on submitted saves
+(e.g., reject `timeSpeed !== 1`, bound cash deltas per wall-clock) — that lives
+in their server files, so it needs their hands, not mine.
