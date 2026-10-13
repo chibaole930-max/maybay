@@ -1,0 +1,498 @@
+/* =============================================================================
+   genz — "A · Sticker Pop" design layer (single light theme)
+   Cream paper, thick ink borders, hard offset shadows, sticker badges,
+   Baloo 2 display + Be Vietnam Pro body, violet/lime/pink accents.
+   Loaded LAST in app/layout.tsx. Replaces app/v5.css page by page.
+   Specimens: /tmp/opencode/genz/ · Plan: docs/plans/2026-10-13-genz-sticker-redesign.md
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 1. Tokens */
+:root {
+  --font-display: 'Baloo 2', 'Be Vietnam Pro', sans-serif;
+  --font-body: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --bg: #fff6e9;
+  --surface: #ffffff;
+  --surface-subtle: #fdf3e3;
+  --surface-sunken: #f3e8d2;
+  --text: #22223b;
+  --muted: #6b6b8c;
+  --line: #e7dcc4;
+  --line-strong: #22223b;
+
+  --ink: #22223b;
+  --violet: #7c3aed;
+  --violet-deep: #5b21b6;
+  --lime: #a3e635;
+  --lime-deep: #4d7c0f;
+  --pink: #f472b6;
+  --sky: #38bdf8;
+  --accent: #ffb800;
+  --success: #4d7c0f;
+  --success-soft: #eef7da;
+  --success-ink: #3f6212;
+  --warn-soft: #fdf0dc;
+  --warn-ink: #b45309;
+  --danger: #dc2626;
+  --danger-soft: #fde7e7;
+  --blue: #7c3aed;
+  --blue-light: #efe8fd;
+
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r: 16px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+  --r-pill: 999px;
+
+  --bd: 2px solid var(--ink);
+  --bd-sm: 1.5px solid var(--ink);
+  --sh-1: 3px 3px 0 var(--ink);
+  --sh-2: 5px 5px 0 var(--ink);
+  --sh-soft: 0 12px 26px -16px rgba(34, 34, 59, 0.35);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ----------------------------------------------------------------- 2. Base */
+html,
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.display {
+  font-family: var(--font-display);
+}
+
+.tabular-nums {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.positive {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.negative {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------- 3. Type */
+.title {
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.sub {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0 0 13px;
+  color: var(--text);
+}
+
+.eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* ------------------------------------------------------------- 4. Surfaces */
+.card {
+  background: var(--surface);
+  border: var(--bd);
+  border-radius: var(--r);
+  padding: 16px;
+  box-shadow: var(--sh-1);
+}
+
+.sub-card {
+  background: var(--surface-subtle);
+  border: var(--bd-sm);
+  border-radius: var(--r);
+  padding: 14px;
+}
+
+/* ------------------------------------------------------------- 5. Controls */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: var(--bd);
+  border-radius: 14px;
+  background: var(--violet);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease), filter 0.12s;
+}
+
+.btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn.secondary {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--text);
+  box-shadow: none;
+}
+
+.btn.danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn.success {
+  background: var(--success);
+  color: #fff;
+}
+
+.btn.compact {
+  min-height: 36px;
+  padding: 0 13px;
+  border-radius: 11px;
+  font-size: 12.5px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.btn.compact:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.btn:focus-visible,
+.icon-btn:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[role='switch']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--violet);
+  outline-offset: 2px;
+}
+
+.input,
+.select {
+  width: 100%;
+  min-height: 44px;
+  border: var(--bd);
+  border-radius: 12px;
+  padding: 11px 14px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: box-shadow 0.15s var(--ease);
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+.input:focus,
+.select:focus {
+  box-shadow: 3px 3px 0 var(--violet);
+}
+
+.label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 7px;
+  color: var(--text);
+}
+
+/* --------------------------------------------------------------- 6. Status */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: var(--r-pill);
+  border: var(--bd-sm);
+  background: var(--success-soft);
+  color: var(--success-ink);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge.warn {
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+}
+
+.badge.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.badge.info {
+  background: var(--blue-light);
+  color: var(--violet-deep);
+}
+
+.progress {
+  height: 10px;
+  background: var(--surface);
+  border: var(--bd-sm);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.progress > i {
+  position: relative;
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: repeating-linear-gradient(-45deg, var(--lime) 0 8px, #86cf16 8px 16px);
+}
+
+.progress > i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: v5-sheen 2.6s linear infinite;
+}
+
+@keyframes v5-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.progress.success > i {
+  background: repeating-linear-gradient(-45deg, var(--success) 0 8px, var(--success-ink) 8px 16px);
+}
+
+/* ---------------------------------------------------------------- 7. Table */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: var(--bd-sm);
+  border-radius: 12px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+th {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  background: var(--surface-subtle);
+}
+
+/* Inside a scrollable table the money stays on one line and stays
+   reachable — the responsive single-line case, not a loss. */
+.table-wrap .positive,
+.table-wrap .negative,
+.table-wrap .tabular-nums {
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------- 8. Misc detail */
+.term-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 5px;
+  border: 1.5px solid var(--muted);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+  position: relative;
+  vertical-align: middle;
+}
+
+.term-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 230px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: var(--bd-sm);
+  background: var(--ink);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  z-index: 60;
+  box-shadow: var(--sh-1);
+}
+
+.term-help:hover .term-tooltip,
+.term-help:focus .term-tooltip {
+  display: block;
+}
+
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--surface-sunken) 25%, var(--surface-subtle) 50%, var(--surface-sunken) 75%);
+  background-size: 240% 100%;
+  animation: v5-shimmer 1.4s linear infinite;
+}
+
+@keyframes v5-shimmer {
+  to {
+    background-position: -240% 0;
+  }
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-row {
+  display: flex;
+  gap: 10px;
+}
+
+.field-row > .input,
+.field-row > .select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Money must never be clipped: wrap anywhere as last resort. */
+.tabular-nums,
+.stat-value,
+.route-earning-row > strong,
+.mission-reward,
+.mission-reward b,
+.sell-value,
+.arrival-row strong,
+.live-flight-payout,
+.market-row > b,
+.kv > b,
+.econ-grid b,
+.offline-breakdown b,
+.ipo-summary b,
+.activity-row > b {
+  overflow-wrap: anywhere;
+}
+
+/* Grid/flex items must shrink instead of widening the page. */
+.stat-grid > *,
+.grid-2 > *,
+.grid-3 > *,
+.live-income-kpis > div,
+.live-ops-grid > *,
+.community-grid > *,
+.route-overview-layout > *,
+.plane-card,
+.route-card,
+.market-row > span {
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------- 9. Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .progress > i::after {
+    display: none;
+  }
+}

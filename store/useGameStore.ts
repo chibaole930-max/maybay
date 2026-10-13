@@ -370,6 +370,8 @@ export const useGameStore = create<Store>()(
           // hold a 2×/4× choice are pinned back to 1× on load (no migration
           // bump needed; the setter no longer exists).
           state.timeSpeed = 1;
+          // Single-theme redesign: old saves holding dark fall back to light.
+          state.theme = 'light';
         }
       },
     }

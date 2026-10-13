@@ -3,6 +3,8 @@ import './globals.css';
 import 'leaflet/dist/leaflet.css';
 // v5 owns the cascade: loaded last so the new design layer wins over v2–v4.
 import './v5.css';
+// genz owns the cascade over v5 while the sticker redesign migrates page by page.
+import './genz.css';
 import { PwaRegister } from './pwa-register';
 
 export const metadata: Metadata = {
@@ -33,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
           rel="stylesheet"
         />
       </head>

@@ -11,8 +11,6 @@ import {
   Volume2,
   VolumeX,
   Coins,
-  Sun,
-  Moon,
   Sparkles,
   Bot,
   AlertTriangle,
@@ -43,8 +41,6 @@ function SettingsContent() {
     hardcore,
     loan,
     toggleHardcore,
-    theme,
-    setTheme,
     currency,
     setCurrency,
     soundEnabled,
@@ -271,30 +267,7 @@ function SettingsContent() {
               </button>
             </div>
 
-            {/* Theme Toggle */}
-            <div className="control-row">
-              <div>
-                <b style={{ fontSize: 14 }}>Giao diện Sáng / Tối</b>
-                <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                  Tương thích hoàn hảo cả ban ngày lẫn ban đêm.
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  className={`btn compact ${theme === 'light' ? '' : 'ghost'}`}
-                  onClick={() => setTheme('light')}
-                >
-                  <Sun size={15} /> Sáng
-                </button>
-                <button
-                  className={`btn compact ${theme === 'dark' ? '' : 'ghost'}`}
-                  onClick={() => setTheme('dark')}
-                >
-                  <Moon size={15} /> Tối
-                </button>
-              </div>
-            </div>
+            
           </div>
         </div>
 
