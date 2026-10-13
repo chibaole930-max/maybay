@@ -113,14 +113,14 @@ export function useOnlineSync() {
     return () => { stop = true; clearInterval(saveTimer); clearInterval(beatTimer); };
   }, [ready, account, saveNow]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await netClient.firebaseSignIn(email, password);
+  const login = useCallback(async (username: string, password: string) => {
+    const result = await netClient.login(username, password);
     if (result.ok) setAccount(result.account);
     return result;
   }, []);
 
-  const register = useCallback(async (input: { email: string; password: string; name: string }) => {
-    const result = await netClient.firebaseRegister(input.email, input.password, input.name);
+  const register = useCallback(async (input: { username: string; password: string; name: string }) => {
+    const result = await netClient.register(input);
     if (result.ok) setAccount(result.account);
     return result;
   }, []);

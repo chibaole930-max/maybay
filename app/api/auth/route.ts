@@ -1,47 +1,46 @@
 import { NextResponse } from 'next/server';
-import { createSession, revokeSessions, syncFirebaseIdentity } from '@/lib/server/onlineStore';
+import { changePassword, createSession, loginWithPassword, registerAccount, revokeSessions } from '@/lib/server/onlineStore';
 import { accountFromRequest, clearCookieHeader, logoutRequest, sessionCookieHeader } from '@/lib/server/session';
 import { StorageUnavailableError } from '@/lib/server/kv';
-import { FirebaseAuthError, FirebaseNotConfiguredError, firebaseReady, verifyIdToken } from '@/lib/server/firebaseAuth';
 import { clientIp, hit, rules } from '@/lib/server/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Tai khoan, xac thuc bang Firebase.
+ * Tai khoan mat khau tu quan (khong vendor).
  *
- * POST { action: 'session', idToken, name? }  doi ID token -> phien cookie httpOnly
- * POST { action: 'revoke-sessions' }          thu hoi moi phien cu (dung sau khi doi mat khau)
- * POST { action: 'logout' }                   xoa phien
+ * Dang ky:    POST { action: 'register', username, password, name }
+ * Dang nhap:  POST { action: 'login', username, password }
+ * Dang xuat:  POST { action: 'logout' }
+ * Doi mat khau: POST { action: 'change-password', current, next }
+ * Thu hoi phien: POST { action: 'revoke-sessions' }
  * GET                                        phien hien tai
- *
- * Voi co che nay, mat khau **khong bao gio cham den may chu**: client xac thuc
- * voi Firebase, chi gui len mot ID token da ky. May chu xac chu ky roi cap cookie
- * httpOwn roi — nen JS trong trang doc khong duoc, chan XSS lay trom, y het phien
- * dang nhap cu ma truoc do.
  */
 
-type Action = 'session' | 'logout' | 'revoke-sessions';
-const ACTIONS: Action[] = ['session', 'logout', 'revoke-sessions'];
+type Action = 'register' | 'login' | 'logout' | 'change-password' | 'revoke-sessions';
+const ACTIONS: Action[] = ['register', 'login', 'logout', 'change-password', 'revoke-sessions'];
 
 /** Dịch lỗi storage (chưa cấu hình KV trên hosting chỉ-đọc) ra thông báo người dùng đọc được. */
 function failure(error: unknown, fallback: string) {
   if (error instanceof StorageUnavailableError) {
     return NextResponse.json({ error: error.message }, { status: 503 });
   }
-  if (error instanceof FirebaseNotConfiguredError) {
-    return NextResponse.json({ error: error.message }, { status: 503 });
-  }
-  if (error instanceof FirebaseAuthError) {
-    // 401: token hỏng/hết hạn — client đăng nhập lại được, không phải lỗi máy chủ.
-    return NextResponse.json({ error: error.message }, { status: 401 });
-  }
   console.error('[auth]', error);
   return NextResponse.json({ error: fallback }, { status: 500 });
 }
 
+async function guard(request: Request, name: string, rule: { limit: number; windowSeconds: number }) {
+  const rate = await hit(name, clientIp(request), rule);
+  if (!rate.ok) {
+    return NextResponse.json(
+      { error: `Qua nhieu lan thu. Thu lai sau ${rate.retryAfter} giay.` },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } },
+    );
+  }
+  return null;
+}
+
 export async function GET(request: Request) {
-  if (!firebaseReady()) return NextResponse.json({ account: null });
   const session = await accountFromRequest(request);
   if (!session) return NextResponse.json({ account: null });
   return NextResponse.json({ account: session.account });
@@ -55,7 +54,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Du lieu khong hop le.' }, { status: 400 });
   }
 
-  const action = String(json.action || 'session') as Action;
+  const action = String(json.action || 'login') as Action;
   if (!ACTIONS.includes(action)) {
     return NextResponse.json({ error: 'Hanh dong khong hop le.' }, { status: 400 });
   }
@@ -65,8 +64,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true }, { headers: { 'Set-Cookie': clearCookieHeader(request) } });
   }
 
-  if (!firebaseReady()) {
-    return NextResponse.json({ error: 'Máy chủ chưa cấu hình Firebase. Thêm FIREBASE_PROJECT_ID vào .env.local rồi khởi động lại.' }, { status: 503 });
+  if (action === 'change-password') {
+    const session = await accountFromRequest(request);
+    if (!session) return NextResponse.json({ error: 'Can dang nhap.' }, { status: 401 });
+    const blocked = await guard(request, 'change-password', rules.changePassword);
+    if (blocked) return blocked;
+    try {
+      const result = await changePassword(session.pilot, String(json.current || ''), String(json.next || ''));
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+      // Moi phien cu vua bi bo hieu luc — cap cookie moi cho phien hien tai.
+      const fresh = await createSession(session.pilot.id, result.sessionEpoch);
+      return NextResponse.json({ ok: true }, { headers: { 'Set-Cookie': sessionCookieHeader(request, fresh) } });
+    } catch (error) {
+      return failure(error, 'Doi mat khau that bai do loi may chu.');
+    }
   }
 
   if (action === 'revoke-sessions') {
@@ -77,8 +88,6 @@ export async function POST(request: Request) {
     try {
       const result = await revokeSessions(session.pilot);
       if (!result.ok) return NextResponse.json({ error: result.error }, { status: 409 });
-      // Tăng `authEpoch` làm chính cookie đang cầm cũng hết hiệu lực, nên phải
-      // cấp lại phiên mới — nếu không người dùng bị đá ra khỏi game.
       const fresh = await createSession(session.pilot.id, result.sessionEpoch);
       return NextResponse.json({ ok: true }, { headers: { 'Set-Cookie': sessionCookieHeader(request, fresh) } });
     } catch (error) {
@@ -86,30 +95,36 @@ export async function POST(request: Request) {
     }
   }
 
-  const idToken = String(json.idToken || '');
-  try {
-    const identity = await verifyIdToken(idToken);
-    // Hạn mức theo IP: đổi phiên là thao tác nhẹ nhưng vẫn là điểm vào để bị
-    // dội token hỏng. Đếm cả lần thành công để một script không spam vô hạn.
-    const rate = await hit('session', clientIp(request), rules.session);
-    if (!rate.ok) {
+  if (action === 'register') {
+    const blocked = await guard(request, 'register', rules.register);
+    if (blocked) return blocked;
+    try {
+      const result = await registerAccount({
+        username: String(json.username || ''),
+        password: String(json.password || ''),
+        name: String(json.name || ''),
+      });
+      if (!result.ok) return NextResponse.json({ error: result.error, field: result.field }, { status: result.field ? 400 : 409 });
       return NextResponse.json(
-        { error: `Qua nhieu lan thu. Thu lai sau ${rate.retryAfter} giay.` },
-        { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } },
+        { account: { id: result.pilot.id, code: result.pilot.code, name: result.pilot.name, username: result.pilot.username, createdAt: result.pilot.createdAt } },
+        { status: 201, headers: { 'Set-Cookie': sessionCookieHeader(request, result.token) } },
       );
+    } catch (error) {
+      return failure(error, 'Dang ky that bai do loi may chu.');
     }
+  }
 
-    const result = await syncFirebaseIdentity(identity, json.name ? String(json.name) : undefined);
-    if (!result.ok) {
-      // Chưa xác minh email là "tạm thời chưa được vào" chứ không phải nhập sai —
-      // 403 để client hiện màn hình chờ thay vì báo lỗi form.
-      const status = result.field === 'verification' ? 403 : 400;
-      return NextResponse.json({ error: result.error, field: result.field }, { status });
-    }
-
+  const blockedLogin = await guard(request, 'login', rules.login);
+  if (blockedLogin) return blockedLogin;
+  try {
+    const result = await loginWithPassword({
+      username: String(json.username || ''),
+      password: String(json.password || ''),
+    });
+    if (!result.ok) return NextResponse.json({ error: result.error, field: result.field }, { status: 401 });
     return NextResponse.json(
-      { account: { id: result.pilot.id, code: result.pilot.code, name: result.pilot.name, username: result.pilot.username, email: result.pilot.email, createdAt: result.pilot.createdAt }, created: result.created },
-      { status: result.created ? 201 : 200, headers: { 'Set-Cookie': sessionCookieHeader(request, result.token) } },
+      { account: { id: result.pilot.id, code: result.pilot.code, name: result.pilot.name, username: result.pilot.username, createdAt: result.pilot.createdAt } },
+      { headers: { 'Set-Cookie': sessionCookieHeader(request, result.token) } },
     );
   } catch (error) {
     return failure(error, 'Dang nhap that bai do loi may chu.');

@@ -5,33 +5,6 @@
  * tu mang cookie theo — client khong can (va khong the) doc duoc token.
  */
 
-import {
-  createUserWithEmailAndPassword,
-  reauthenticateWithCredential,
-  sendEmailVerification,
-  signInWithEmailAndPassword,
-  signOut,
-  updatePassword,
-  updateProfile,
-  EmailAuthProvider,
-  type User,
-} from 'firebase/auth';
-import { firebaseAuth, firebaseErrorMessage } from '@/lib/firebase/client';
-
-/**
- * Kết quả một lần đăng nhập/đăng ký.
- *
- * `pendingVerification` = tài khoản tạo xong nhưng email chưa xác minh, nên
- * máy chủ chưa cấp phiên. UI chuyển sang màn hình chờ thay vì báo lỗi.
- */
-export type AuthOutcome =
-  | { ok: true; account: Account }
-  | { ok: false; error: string; pendingVerification?: boolean };
-
-/** Báo rõ biến nào còn thiếu, thay vì lỗi chung chung. */
-export const firebaseNotReadyError = (): string =>
-  'Máy chủ chưa cấu hình Firebase. Cần đủ NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, NEXT_PUBLIC_FIREBASE_PROJECT_ID, NEXT_PUBLIC_FIREBASE_APP_ID trong .env.local rồi khởi động lại.';
-
 export type Versioned<T> = { data: T; updatedAt: number; version: number };
 export type MockProfile = { code: string; name: string; level: number; reputation: number; fleet: string[]; topRoutes: string[]; value: number };
 export type SeasonSummary = { name: string; daysLeft: number; reward: string; status: 'mock' | 'live'; ranks?: { code: string; name: string; value: number }[] };
@@ -107,160 +80,38 @@ export const netClient = {
   },
 
   /**
-   * Đăng nhập bằng Firebase, rồi đổi ID token lấy cookie phiên.
-   *
-   * Mật khẩu chỉ đi giữa trình duyệt và Firebase — máy chủ game không bao giờ
-   * thấy. Máy chủ chỉ nhận ID token đã ký và cấp cookie httpOnly.
+   * Dang nhap bang ten dang nhap + mat khau. Mat khau di qua HTTPS den may chu
+   * game, duoc kiem tra bang scrypt roi bo ngay — khong luu ban ro o dau.
+   * May chu tra cookie phien httpOnly.
    */
-  async firebaseSignIn(email: string, password: string): Promise<AuthOutcome> {
-    const auth = firebaseAuth();
-    if (!auth) return { ok: false, error: firebaseNotReadyError() };
-
+  async login(username: string, password: string): Promise<{ ok: true; account: Account } | { ok: false; error: string }> {
     try {
-      const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
-      return await this.exchangeFirebaseToken(credential.user);
-    } catch (error) {
-      return { ok: false, error: firebaseErrorMessage(error) };
-    }
-  },
-
-  /**
-   * Tạo tài khoản Firebase mới, rồi đổi token lấy cookie phiên.
-   *
-   * Máy chủ chặn tài khoản chưa xác minh email, nên trả về thêm `pendingVerification`
-   * để UI chuyển sang màn hình chờ thay vì báo lỗi.
-   */
-  async firebaseRegister(email: string, password: string, name: string): Promise<AuthOutcome> {
-    const auth = firebaseAuth();
-    if (!auth) return { ok: false, error: firebaseNotReadyError() };
-
-    try {
-      const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      // Tên hãng bay đặt vào `displayName` để Firebase quản lý; máy chủ vẫn lấy
-      // `name` qua tham số tường minh để không phụ thuộc token đã cấp trước khi
-      // `displayName` được ghi.
-      await updateProfile(credential.user, { displayName: name.trim() });
-
-      // Gửi link xác minh. Lỗi ở bước này KHÔNG làm hỏng đăng ký — tài khoản đã
-      // tồn tại, và màn hình chờ có nút "gửi lại" cho người dùng tự thử.
-      await this.sendVerificationEmail();
-
-      const result = await this.exchangeFirebaseToken(credential.user, name.trim());
-      if (!result.ok) {
-        if (result.pendingVerification) return { ok: false, error: result.error, pendingVerification: true };
-        // Tài khoản Firebase đã tạo xong nhưng không tạo được hãng bay. Nói rõ
-        // để người chơi hiểu là có thể đăng nhập lại, chứ không bỏ mất tài khoản.
-        return { ok: false, error: `${result.error} (Tài khoản đã tạo — hãy thử đăng nhập lại.)` };
-      }
-      return result;
-    } catch (error) {
-      return { ok: false, error: firebaseErrorMessage(error) };
-    }
-  },
-
-  /**
-   * Gửi (hoặc gửi lại) email xác minh.
-   *
-   * `actionCodeSettings` trỏ về chính domain đang chạy để người dùng bấm link thì
-   * quay lại đúng game, không bị đưa sang trang trắng. Để trống thì Firebase
-   * dùng domain mặc định trong project.
-   */
-  async sendVerificationEmail(): Promise<{ ok: boolean; error?: string }> {
-    const auth = firebaseAuth();
-    const user = auth?.currentUser;
-    if (!user) return { ok: false, error: 'Chưa đăng nhập.' };
-    try {
-      await sendEmailVerification(user);
-      return { ok: true };
-    } catch (error) {
-      return { ok: false, error: firebaseErrorMessage(error) };
-    }
-  },
-
-  /**
-   * Kiểm tra người dùng đã bấm link xác minh chưa, rồi thử đổi phiên lại.
-   *
-   * Phải `reload()` trước `getIdToken()`: Firebase ghi `email_verified` vào token
-   * khi cấp, nên token đang cầm vẫn là bản cũ — không reload thì luôn thấy chưa
-   * xác minh dù đã xác minh rồi.
-   */
-  async refreshAfterVerification(name?: string): Promise<AuthOutcome> {
-    const auth = firebaseAuth();
-    const user = auth?.currentUser;
-    if (!user) return { ok: false, error: 'Phiên đăng nhập đã hết. Hãy đăng nhập lại.' };
-    try {
-      await user.reload();
-      if (!user.emailVerified) {
-        return { ok: false, error: 'Chưa xác minh. Hãy mở hộp thư và bấm vào đường dẫn xác minh.', pendingVerification: true };
-      }
-      return this.exchangeFirebaseToken(user, name);
-    } catch (error) {
-      return { ok: false, error: firebaseErrorMessage(error) };
-    }
-  },
-
-  /** Email người đang đăng nhập phía Firebase — dùng cho màn hình chờ xác minh. */
-  firebaseEmail(): string | null {
-    return firebaseAuth()?.currentUser?.email ?? null;
-  },
-
-  /** Đổi ID token của user đang đăng nhập lấy cookie phiên máy chủ. */
-  async exchangeFirebaseToken(user: User, name?: string): Promise<AuthOutcome> {
-    // `true` = buoc refresh ID token, vi thuoc tinh email_verified chi xuat hien
-    // trong token moi cap.
-    const idToken = await user.getIdToken(true);
-    try {
-      const r = await fetch('/api/auth', {
-        method: 'POST',
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ action: 'session', idToken, ...(name ? { name } : {}) }),
-      });
-      const json = (await r.json().catch(() => ({}))) as { account?: Account; error?: string; field?: string };
-      if (!r.ok || !json.account) {
-        return { ok: false, error: json.error || 'Đăng nhập thất bại.', pendingVerification: json.field === 'verification' };
-      }
+      const r = await fetch('/api/auth', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'login', username, password }) });
+      const json = (await r.json().catch(() => ({}))) as { account?: Account; error?: string };
+      if (!r.ok || !json.account) return { ok: false, error: json.error || 'Dang nhap that bai.' };
       return { ok: true, account: json.account };
-    } catch {
-      return { ok: false, error: 'Không kết nối được máy chủ.' };
-    }
+    } catch { return { ok: false, error: 'Khong ket noi duoc may chu.' }; }
   },
 
-  /** Còn phiên Firebase bên client không — dùng khi cookie máy chủ đã hết hạn. */
-  async hasFirebaseSession(): Promise<boolean> {
-    const auth = firebaseAuth();
-    if (!auth) return false;
-    return safe(async () => (auth.currentUser ? true : false), false);
+  async register(input: { username: string; password: string; name: string }): Promise<{ ok: true; account: Account } | { ok: false; error: string }> {
+    try {
+      const r = await fetch('/api/auth', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'register', ...input }) });
+      const json = (await r.json().catch(() => ({}))) as { account?: Account; error?: string };
+      if (!r.ok || !json.account) return { ok: false, error: json.error || 'Dang ky that bai.' };
+      return { ok: true, account: json.account };
+    } catch { return { ok: false, error: 'Khong ket noi duoc may chu.' }; }
   },
 
-  /** Đổi mật khẩu trên Firebase, rồi thu hồi các phiên cũ ở máy chủ. */
-  async firebaseChangePassword(current: string, next: string): Promise<{ ok: boolean; error?: string }> {
-    const auth = firebaseAuth();
-    if (!auth) return { ok: false, error: firebaseNotReadyError() };
-    const user = auth.currentUser;
-    // Firebase yêu cầu xác nhận lại bằng mật khẩu cũ trước khi đổi.
-    if (!user) return { ok: false, error: 'Cần đăng nhập lại để đổi mật khẩu.' };
-
+  async changePassword(current: string, next: string): Promise<{ ok: boolean; error?: string }> {
     try {
-      const credential = EmailAuthProvider.credential(user.email ?? '', current);
-      await reauthenticateWithCredential(user, credential);
-      await updatePassword(user, next);
-    } catch (error) {
-      return { ok: false, error: firebaseErrorMessage(error) };
-    }
-
-    try {
-      const r = await fetch('/api/auth', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'revoke-sessions' }) });
+      const r = await fetch('/api/auth', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'change-password', current, next }) });
       const json = (await r.json().catch(() => ({}))) as { error?: string };
-      if (!r.ok) return { ok: false, error: json.error || 'Đổi mật khẩu xong nhưng chưa thu hồi phiên cũ.' };
+      if (!r.ok) return { ok: false, error: json.error || 'Đổi mật khẩu thất bại.' };
       return { ok: true };
-    } catch {
-      return { ok: false, error: 'Đổi mật khẩu xong nhưng không kết nối được máy chủ.' };
-    }
+    } catch { return { ok: false, error: 'Không kết nối được máy chủ.' }; }
   },
 
   async logout(): Promise<boolean> {
-    const auth = firebaseAuth();
-    if (auth?.currentUser) await signOut(auth).catch(() => undefined);
     return safe(async () => {
       const r = await fetch('/api/auth', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'logout' }) });
       return r.ok;

@@ -3,24 +3,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, Eye, EyeOff, KeyRound, MailCheck, Plane, ShieldCheck, UserPlus } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, KeyRound, Plane, ShieldCheck, UserPlus } from 'lucide-react';
 import { netClient } from '@/lib/net/netClient';
-import { firebaseConfigured, firebaseMissingEnv } from '@/lib/firebase/client';
 import { useGameStore } from '@/store/useGameStore';
 
 type Tab = 'login' | 'register';
-type Errors = Partial<Record<'email' | 'password' | 'confirm' | 'name' | 'form', string>>;
+type Errors = Partial<Record<'username' | 'password' | 'confirm' | 'name' | 'form', string>>;
 
-const EMAIL_HINT = 'Email dùng để đăng nhập và khôi phục tài khoản';
-
-/** Bao lâu sau khi bấm "gửi lại" thì cho gửi tiếp — tránh spam cho chính mình. */
-const RESEND_COOLDOWN_SECONDS = 60;
+const USERNAME_HINT = '3-20 ký tự, chỉ gồm chữ thường, số và . _ -';
 
 export default function LoginPage() {
   const router = useRouter();
   const airline = useGameStore((s) => s.airline);
   const [tab, setTab] = useState<Tab>('login');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -28,26 +24,12 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
-  /**
-   * Email đã tạo tài khoản nhưng chưa xác minh — hiện màn hình chờ thay vì form.
-   * `pendingName` giữ lại tên hãng bay để sau khi xác minh xong còn dùng.
-   */
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
-  const [pendingName, setPendingName] = useState('');
-  const [resendIn, setResendIn] = useState(0);
 
   // Cho phep mo thang tab Dang ky bang link /login?tab=register.
   useEffect(() => {
     const wanted = new URLSearchParams(window.location.search).get('tab');
     if (wanted === 'register' || wanted === 'login') setTab(wanted);
   }, []);
-
-  // Đếm ngược nút "gửi lại email xác minh".
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const timer = setTimeout(() => setResendIn((n) => n - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [resendIn]);
 
   // Đã có phiên đăng nhập thì đưa thẳng vào game.
   useEffect(() => {
@@ -60,17 +42,19 @@ export default function LoginPage() {
     return () => { stop = true; };
   }, [router]);
 
-  const emailError = useMemo(() => {
-    const value = email.trim();
+  const usernameError = useMemo(() => {
+    const value = username.trim().toLowerCase();
     if (!value) return '';
-    // Cùng cách kiểm với Firebase: tránh gửi đi rồi mới bị từ chối.
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Email không hợp lệ.';
+    if (value.length < 3 || value.length > 20) return 'Tên đăng nhập phải từ 3 đến 20 ký tự.';
+    if (!/^[a-z0-9._-]+$/.test(value)) return 'Chỉ gồm chữ thường, số và . _ -';
+    if (/^[._-]|[._-]$/.test(value)) return 'Không được bắt đầu hoặc kết thúc bằng . _ -';
     return '';
-  }, [email]);
+  }, [username]);
 
   const passwordError = useMemo(() => {
     if (!password) return '';
     if (password.length < 6) return 'Mật khẩu cần tối thiểu 6 ký tự.';
+    if (password.length > 72) return 'Mật khẩu tối đa 72 ký tự.';
     return '';
   }, [password]);
 
@@ -83,7 +67,7 @@ export default function LoginPage() {
 
   const confirmError = useMemo(() => {
     if (!confirm) return '';
-    return confirm === password ? '' : 'Mật khẩu nhận lại chưa khớp.';
+    return confirm === password ? '' : 'Mật khẩu nhập lại chưa khớp.';
   }, [confirm, password]);
 
   const switchTab = (next: Tab) => {
@@ -96,7 +80,7 @@ export default function LoginPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     const next: Errors = {};
-    if (emailError) next.email = emailError;
+    if (usernameError) next.username = usernameError;
     if (passwordError) next.password = passwordError;
     if (tab === 'register') {
       if (nameError) next.name = nameError;
@@ -108,110 +92,21 @@ export default function LoginPage() {
     setBusy(true);
     setErrors({});
     const result = tab === 'login'
-      ? await netClient.firebaseSignIn(email.trim(), password)
-      : await netClient.firebaseRegister(email.trim(), password, name.trim());
+      ? await netClient.login(username.trim().toLowerCase(), password)
+      : await netClient.register({ username: username.trim().toLowerCase(), password, name: name.trim() });
 
     setBusy(false);
     if (!result.ok) {
-      // Máy chủ từ chối vì email chưa xác minh — chuyển sang màn hình chờ.
-      if (result.pendingVerification) {
-        setPendingEmail(email.trim());
-        setPendingName(name.trim());
-        setResendIn(RESEND_COOLDOWN_SECONDS);
-        return;
-      }
-      // Firebase báo lỗi bằng mã kỹ thuật; `netClient` đã dịch sang tiếng Việt.
+      // Server là nguồn duy nhất biết tên đăng nhập đã bị chiếm chưa.
       const message = result.error;
-      if (/email/i.test(message)) setErrors({ email: message });
-      else if (/mật khẩu|đăng nhập lại/i.test(message)) setErrors({ password: message });
-      else if (/tên hãng bay/i.test(message)) setErrors({ name: message });
+      if (/ten dang nhap/i.test(message)) setErrors({ username: message });
+      else if (/mat khau|khong dung/i.test(message)) setErrors({ password: message });
+      else if (/ten hang/i.test(message)) setErrors({ name: message });
       else setErrors({ form: message });
       return;
     }
     router.push(airline ? '/dashboard' : '/onboarding');
   };
-
-  /** Người dùng báo đã bấm link xác minh — thử đổi phiên lại. */
-  const confirmVerified = async () => {
-    setBusy(true);
-    setErrors({});
-    const result = await netClient.refreshAfterVerification(pendingName || undefined);
-    setBusy(false);
-    if (result.ok) {
-      router.push(airline ? '/dashboard' : '/onboarding');
-      return;
-    }
-    setErrors({ form: result.error });
-  };
-
-  const resendVerification = async () => {
-    setBusy(true);
-    setErrors({});
-    const result = await netClient.sendVerificationEmail();
-    setBusy(false);
-    if (result.ok) {
-      setResendIn(RESEND_COOLDOWN_SECONDS);
-      setErrors({});
-    } else {
-      setErrors({ form: result.error || 'Không gửi lại được email xác minh.' });
-    }
-  };
-
-  const backToForm = () => {
-    setPendingEmail(null);
-    setErrors({});
-    setPassword('');
-    setConfirm('');
-  };
-
-  if (pendingEmail) {
-    return (
-      <main
-        className="onboard-bg"
-        style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '24px 16px' }}
-      >
-        <div className="card onboard-card" style={{ width: 'min(100%, 460px)', padding: '32px 28px', boxShadow: '0 16px 40px rgba(11, 31, 58, 0.08)' }}>
-          <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div className="tile-ic" style={{ width: 52, height: 52, margin: '0 auto 12px' }}>
-              <MailCheck size={26} />
-            </div>
-            <h1 className="title" style={{ fontSize: 20 }}>Xác minh email</h1>
-            <p className="sub">Một bước nữa là vào được game</p>
-          </div>
-
-          <p style={{ fontSize: 14, lineHeight: 1.7, margin: '0 0 16px' }}>
-            Mình đã gửi đường dẫn xác minh tới <b>{pendingEmail}</b>. Mở hộp thư và bấm
-            vào đường dẫn để xác nhận địa chỉ này thuộc về bạn.
-          </p>
-          <p className="muted" style={{ fontSize: 12, lineHeight: 1.6, margin: '0 0 18px' }}>
-            Chưa thấy email? Kiểm tra thư mục spam. Email xác minh có hiệu lực vài giờ —
-            nếu hết hạn thì bấm &quot;gửi lại&quot; để nhận cái mới.
-          </p>
-
-          {errors.form && (
-            <p className="badge danger" style={{ display: 'block', marginBottom: 14, textAlign: 'center' }}>{errors.form}</p>
-          )}
-
-          <button className="btn" onClick={confirmVerified} disabled={busy} style={{ width: '100%' }}>
-            {busy ? 'Đang kiểm tra…' : 'Tôi đã xác minh xong'} <ArrowRight size={16} />
-          </button>
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-            <button className="btn ghost" style={{ flex: 1 }} onClick={resendVerification} disabled={busy || resendIn > 0}>
-              {resendIn > 0 ? `Gửi lại sau ${resendIn}s` : 'Gửi lại email'}
-            </button>
-            <button className="btn ghost" style={{ flex: 1 }} onClick={backToForm} disabled={busy}>
-              Đổi email
-            </button>
-          </div>
-
-          <div style={{ borderTop: '1px solid var(--line)', marginTop: 18, paddingTop: 16, textAlign: 'center' }}>
-            <Link href="/tutorial" style={{ fontSize: 13, fontWeight: 600 }}>Chưa biết chơi? Xem hướng dẫn trước →</Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
 
   if (checking) {
     return (
@@ -241,16 +136,6 @@ export default function LoginPage() {
           </h1>
           <p className="sub">{tab === 'login' ? 'Vào lại hãng bay của bạn, trên mọi thiết khoản' : 'Một tài khoản giữ trọn tiến độ của bạn'}</p>
         </div>
-
-        {!firebaseConfigured && (
-          <div className="badge danger" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 16, lineHeight: 1.5, fontWeight: 400 }}>
-            <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>
-              Chưa cấu hình Firebase — đăng nhập tạm thời không dùng được. Thiếu:{' '}
-              <code>{firebaseMissingEnv.join(', ')}</code>
-            </span>
-          </div>
-        )}
 
         <div className="seg-tabs">
           {([['login', 'Đăng nhập', KeyRound], ['register', 'Đăng ký', UserPlus]] as const).map(([id, label, Icon]) => (
@@ -284,21 +169,20 @@ export default function LoginPage() {
           )}
 
           <div style={{ marginBottom: 16 }}>
-            <label className="label" htmlFor="email">Email</label>
+            <label className="label" htmlFor="username">Tên đăng nhập</label>
             <input
-              id="email"
+              id="username"
               className="input"
-              type="email"
-              value={email}
-              maxLength={120}
-              placeholder="vidu@hangbay.vn"
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
+              value={username}
+              maxLength={20}
+              placeholder="vidu.canh.en"
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
             />
-            {(errors.email || emailError) && <FieldError message={errors.email || emailError} />}
-            {!emailError && !errors.email && <Hint text={EMAIL_HINT} />}
+            {(errors.username || usernameError) && <FieldError message={errors.username || usernameError} />}
+            {!usernameError && !errors.username && <Hint text={USERNAME_HINT} />}
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -347,15 +231,15 @@ export default function LoginPage() {
             <p className="badge danger" style={{ display: 'block', marginBottom: 14, textAlign: 'center' }}>{errors.form}</p>
           )}
 
-          <button className="btn" type="submit" disabled={busy || !firebaseConfigured} style={{ width: '100%', marginTop: 4 }}>
+          <button className="btn" type="submit" disabled={busy} style={{ width: '100%', marginTop: 4 }}>
             {busy ? 'Đang xử lý…' : tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'} <ArrowRight size={16} />
           </button>
         </form>
 
         <p className="muted" style={{ fontSize: 12, marginTop: 18, display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.6 }}>
           <ShieldCheck size={15} style={{ flexShrink: 0, marginTop: 2 }} />
-          Mật khẩu do Firebase quản lý và không bao giờ tới máy chủ game. Máy chủ chỉ
-          nhận token đã ký rồi cấp cookie httpOnly nên trang khác đọc không được.
+          Mật khẩu được hash bằng scrypt trước khi lưu. Phiên đăng nhập nằm trong cookie
+          httpOnly nên trang web khác đọc không được.
         </p>
 
         <div style={{ borderTop: '1px solid var(--line)', marginTop: 18, paddingTop: 16, textAlign: 'center' }}>

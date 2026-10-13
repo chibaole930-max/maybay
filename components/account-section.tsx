@@ -50,7 +50,7 @@ export function AccountSection() {
     setBusy(true);
     setError('');
     setMessage('');
-    const result = await netClient.firebaseChangePassword(current, next);
+    const result = await netClient.changePassword(current, next);
     setBusy(false);
     if (!result.ok) { setError(result.error || 'Đổi mật khẩu thất bại.'); return; }
     setMessage('Đã đổi mật khẩu. Các phiên đăng nhập cũ đã bị thu hồi.');
