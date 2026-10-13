@@ -79,6 +79,12 @@ async function restCommand<T>(...args: Array<string | number>): Promise<T | null
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(args),
+    // KHÔNG được cache. Day la duong doc/ghi co so du lieu, khong phai GET
+    // tinh. Neu de cache, mot lan doc gia tri "chua co" se duoc giu lai va moi
+    // lan doc sau deu tra ve gia tri cu — dang bieu hien la `PUT /api/save` luon
+    // tra version 1 va `GET /api/save` luon tra null trong khi Redis van co du
+    // lieu dung.
+    cache: 'no-store',
   });
   if (!res.ok) throw new Error(`KV ${args[0]} that bai (HTTP ${res.status})`);
   const json = (await res.json()) as KvResponse;
