@@ -133,4 +133,8 @@ Acceptance criteria:
 
 ## Handoff
 
-Active. Next action: Task 1.
+Done + pushed (743134d, 04f6f06). 17/17 E2E green, build/lint clean, browser
+journey verified, Telegram notified. Open threads: (1) login tab review on
+pull (their area heavily touched, though logic preserved); (2) Firebase-era
+pilots can never set a password — acceptable per user, documented; (3) deploy
+will include this automatically via Vercel on push.
