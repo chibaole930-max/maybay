@@ -63,6 +63,10 @@ need either back, say so in this file.
   migration pattern as v2→v5: build beside, verify per page, delete at the end).
 - D4: Clarity guardrail for every screen: one dominant read, labels stay short,
   no decorative element may cover tappable content or money.
+- D5 (2026-10-13): user waived per-batch eye-approval ("làm tất cả đi không cần
+  xác nhận"). Batches are committed + pushed after programmatic verification;
+  screenshots still go to Telegram for post-review, feedback applied as
+  follow-ups. AC6 becomes post-review instead of a gate.
 
 Acceptance criteria:
 
@@ -101,7 +105,9 @@ the auth-mocked harness before commit. Final batch deletes `v5.css`.
     Eye-approved by user over Telegram. Verified: teaser/popover/level-up/
     offline kinds isolated, overflow 0 @390px.
 
-- [ ] **Task 3: dashboard**
+- [x] **Task 3: dashboard**
+  - Done in commit below. Pure CSS (no tsx change). Verified: populated
+    airline (2 routes + flight), overflow 0 @390/1280, screenshots sent.
 - [ ] **Task 4: fleet + routes**
 - [ ] **Task 5: airports + map chrome** (no logic/geo changes)
 - [ ] **Task 6: finance + missions + leaderboard** (leaderboard logic untouched)
