@@ -70,7 +70,6 @@ function RoutesContent() {
     theme,
     flights,
     gameTimeMs,
-    timeSpeed,
   } = useGameStore();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -223,7 +222,7 @@ function RoutesContent() {
       {/* SVG Map and Routes Overview */}
       <div className="route-overview-layout">
         {/* Bản đồ nền CARTO; dữ liệu marker và đường bay dùng tọa độ sân bay thật. */}
-        <AirlineMap theme={theme} level={airline?.level || 1} airports={ownedAirports} routes={routes} planes={planes} flights={flights || []} gameTimeMs={gameTimeMs || 0} timeSpeed={timeSpeed || 1} currency={currency} baseAirport={airline?.baseAirport || 'SGN'} />
+        <AirlineMap theme={theme} level={airline?.level || 1} airports={ownedAirports} routes={routes} planes={planes} flights={flights || []} gameTimeMs={gameTimeMs || 0} timeSpeed={1} currency={currency} baseAirport={airline?.baseAirport || 'SGN'} />
 
         {/* Routes Operational List */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>

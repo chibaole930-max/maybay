@@ -17,7 +17,7 @@ type Props = {
   planes: Plane[];
   flights: Flight[];
   gameTimeMs: number;
-  timeSpeed: 1 | 2 | 4;
+  timeSpeed: 1;
   currency: 'USD' | 'VND';
   baseAirport: string;
 };
@@ -43,7 +43,7 @@ function RegionFocus({ region }: { region: string }) {
   return null;
 }
 
-function FlightMarkers({ flights, gameTimeMs, speed, planes, airports, currency }: Pick<Props, 'flights' | 'gameTimeMs' | 'timeSpeed' | 'planes' | 'airports' | 'currency'> & { speed: 1 | 2 | 4 }) {
+function FlightMarkers({ flights, gameTimeMs, speed, planes, airports, currency }: Pick<Props, 'flights' | 'gameTimeMs' | 'timeSpeed' | 'planes' | 'airports' | 'currency'> & { speed: 1 }) {
   const [bounds, setBounds] = useState<LatLngBounds | null>(null);
   const map = useMap();
   useMapEvents({ moveend: () => setBounds(map.getBounds()), zoomend: () => setBounds(map.getBounds()) });

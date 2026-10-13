@@ -96,7 +96,6 @@ interface Store extends GameState {
   toggleSound: () => void;
   setTheme: (t: 'light' | 'dark') => void;
   setCurrency: (c: 'USD' | 'VND') => void;
-  setTimeSpeed: (speed: 1 | 2 | 4) => void;
   tick: () => void;
   notify: (text: string, type?: 'info' | 'warn' | 'success') => void;
   markNoticesAsRead: () => void;
@@ -295,7 +294,6 @@ export const useGameStore = create<Store>()(
 
       setTheme: (theme) => set({ theme }),
       setCurrency: (currency) => set({ currency }),
-      setTimeSpeed: (timeSpeed) => set({ timeSpeed }),
 
       tick: () => {
         set((s) => {
@@ -368,6 +366,10 @@ export const useGameStore = create<Store>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.hydrate = true;
+          // Fairness: one real-time rate for every airline — old saves that
+          // hold a 2×/4× choice are pinned back to 1× on load (no migration
+          // bump needed; the setter no longer exists).
+          state.timeSpeed = 1;
         }
       },
     }

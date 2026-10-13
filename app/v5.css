@@ -503,7 +503,6 @@ body.dark .switch.on {
   background: #177245;
 }
 
-body.dark .time-speed button.selected,
 body.dark .activity-filters button.active {
   background: #1d64e0;
 }
@@ -799,39 +798,6 @@ body.dark .seg-tabs button[aria-pressed='true'] {
 
 .money-down {
   color: var(--danger);
-}
-
-.time-speed {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--surface-subtle);
-  flex: none;
-}
-
-.time-speed button {
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  min-width: 38px;
-  min-height: 36px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background 0.14s var(--ease), color 0.14s var(--ease);
-}
-
-.time-speed button.selected {
-  background: var(--navy);
-  color: #fff;
-}
-
-body.dark .time-speed button.selected {
-  background: var(--blue);
 }
 
 .icon-btn {

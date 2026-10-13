@@ -221,7 +221,7 @@ export interface GameState {
   marketingPenaltyUntil?: number;
   updatedAt?: number;
   version?: number;
-  timeSpeed?: 1 | 2 | 4;
+  timeSpeed?: 1;
   gameTimeMs?: number;
   flights?: Flight[];
   nextFlightNumber?: number;
