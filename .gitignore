@@ -5,6 +5,11 @@ node_modules/
 !.env.local.example
 *.tsbuildinfo
 
+# Khoá riêng của Firebase. Chứa `private_key` — đưa vào repo là lộ, và bị xoá
+# khỏi lịch sử git cũng không cứu được (phải xoá khoá trong Firebase Console).
+*-firebase-adminsdk-*.json
+*service-account*.json
+
 # Kho KV khi chạy local (không dùng Vercel KV). Trên Vercel, KV_REST_API_URL
 # sẽ khiến dữ liệu nằm trên KV chứ không ghi vào đây.
 data/kv/
