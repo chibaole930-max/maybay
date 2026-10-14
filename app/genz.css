@@ -774,6 +774,14 @@ th {
   overflow-wrap: anywhere;
 }
 
+.header-cash > small.money-up {
+  color: var(--success-ink);
+}
+
+.header-cash > small.money-down {
+  color: var(--danger);
+}
+
 .money-up {
   color: var(--success-ink);
 }
