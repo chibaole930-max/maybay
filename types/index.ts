@@ -96,7 +96,6 @@ export interface Airline {
   lastTickAt: number;
   autoManage?: boolean; // Level 15 unlock
   reputation?: number; // 0-100, mặc định 70
-  hardcore?: boolean;
   inviteCode?: string;
   updatedAt?: number;
   version?: number;
@@ -212,7 +211,6 @@ export interface GameState {
   currentSituation?: FunnySituation | null;
   situationNextAt?: number;
   activeConsequences?: ActiveConsequence[];
-  hardcore?: boolean;
   redPriceSince?: Record<string, number>;
   greenPriceSince?: Record<string, number>;
   routeTitles?: string[];

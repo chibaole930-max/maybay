@@ -96,6 +96,12 @@ export function AccountSection() {
         {online.status === 'error' && ' Lần lưu gần nhất thất bại — sẽ thử lại ở lượt sau.'}
       </p>
 
+      <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.6 }}>
+        <b>Đồng bộ tự động:</b> mỗi lần đăng nhập, tiến trình mới hơn trên máy khác sẽ
+        tự về máy này; nếu máy này đang xa hơn thì tiến trình ở đây được đẩy lên.
+        Không mất tiến trình ở cả hai chiều.
+      </p>
+
       <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
         <button className="btn secondary" disabled={busy || online.status === 'saving'} onClick={saveNow}>
           <CloudUpload size={16} /> Lưu lên mây ngay

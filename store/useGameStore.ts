@@ -36,7 +36,6 @@ import {
   upgradePlane,
   upgradeResearch,
   resolveFunnySituation,
-  setHardcoreMode,
   runMarketingCampaign,
 } from '@/lib/game-engine';
 import { airports, planes } from '@/lib/mock-data';
@@ -91,7 +90,6 @@ interface Store extends GameState {
   restructure: () => void;
   toggleAutoManage: () => void;
   resolveSituation: (choiceId: string) => void;
-  toggleHardcore: () => void;
   marketingCampaign: () => void;
   toggleSound: () => void;
   setTheme: (t: 'light' | 'dark') => void;
@@ -282,10 +280,6 @@ export const useGameStore = create<Store>()(
       },
 
       resolveSituation: (choiceId) => set((s) => resolveFunnySituation(s, choiceId, Math.random, s.gameTimeMs || 0)),
-      toggleHardcore: () => set((s) => {
-        if (s.loan > 0) return { ...s, notices: [{ id: `hardcore-${Date.now()}`, text: 'Hãy trả hết khoản vay trước khi đổi chế độ Hardcore.', time: Date.now(), unread: true, type: 'warn' }, ...s.notices] };
-        return setHardcoreMode(s, !(s.hardcore ?? s.airline?.hardcore ?? false));
-      }),
       marketingCampaign: () => set((s) => runMarketingCampaign(s)),
 
       toggleSound: () => {

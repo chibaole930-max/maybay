@@ -12,7 +12,7 @@ const SYNC_KEYS = [
   'airline', 'planes', 'routes', 'airports', 'transactions', 'staff',
   'research', 'researchPoints', 'missions', 'eventHistory', 'loan',
   'theme', 'currency', 'soundEnabled', 'tutorialDone', 'simpleMode',
-  'weeklyStarterRewardClaimed', 'activeConsequences', 'hardcore',
+  'weeklyStarterRewardClaimed', 'activeConsequences',
   'redPriceSince', 'greenPriceSince', 'routeTitles', 'friendCodes',
   'competitorPriceAt', 'marketingPenaltyUntil', 'timeSpeed', 'gameTimeMs',
   'flights', 'nextFlightNumber', 'streak', 'goldenHour', 'goldenHourNextAt',
@@ -36,4 +36,72 @@ export function isUsableSave(value: unknown): value is SaveSnapshot {
   const candidate = value as Record<string, unknown>;
   if (!candidate.airline || typeof candidate.airline !== 'object') return false;
   return typeof (candidate.airline as { cash?: unknown }).cash === 'number';
+}
+
+/* ------------------------------------------------------------------ *
+ * Moc dong bo: may nay da tung thay ban luu cloud nao cua tai khoan nao
+ * ------------------------------------------------------------------ */
+
+const MARKER_PREFIX = 'vat-cloud-sync:';
+
+interface SyncMarker {
+  updatedAt: number;
+  version: number;
+}
+
+const markerKey = (accountId: string) => `${MARKER_PREFIX}${accountId}`;
+
+/**
+ * Moc dong bo giup quyet dinh "ban luu tren may chu co moi hon ban tren may nay
+ * khong?" khi dang nhap.
+ *
+ * Server khong cho client so sanh truc tiep theo tung dong (chi doc duoc ban
+ * luu cua chinh minh), nen client tu ghi moc sau moi lan dong bo thanh cong.
+ * Moc nay rieng theo tai khoan: doi tai khoan tren cung mot may thi khong
+ * dung nham muc cua tai khoan truoc.
+ */
+export function readSyncMarker(accountId: string): SyncMarker | null {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(markerKey(accountId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SyncMarker>;
+    if (typeof parsed.updatedAt !== 'number') return null;
+    return { updatedAt: parsed.updatedAt, version: typeof parsed.version === 'number' ? parsed.version : 0 };
+  } catch {
+    return null;
+  }
+}
+
+export function writeSyncMarker(accountId: string | undefined, updatedAt: number, version = 0): void {
+  if (!accountId || typeof localStorage === 'undefined' || !Number.isFinite(updatedAt) || updatedAt <= 0) return;
+  try {
+    localStorage.setItem(markerKey(accountId), JSON.stringify({ updatedAt, version }));
+  } catch {
+    /* localStorage đầy hoặc bị chặn: bỏ qua, lần sau so sánh lại từ đầu */
+  }
+}
+
+export function clearSyncMarker(accountId: string): void {
+  if (typeof localStorage === 'undefined') return;
+  try { localStorage.removeItem(markerKey(accountId)); } catch { /* ignore */ }
+}
+
+/**
+ * Quyết định lúc đăng nhập: lấy bản cloud hay giữ bản local.
+ *
+ * Cloud chỉ thắ khi vượt HAI ngưỡng:
+ * 1. `cloudUpdatedAt > markerUpdatedAt` — cloud có mới hơn bản mà máy này từng
+ *    đồng bộ, tức là có ai đó (máy khác, phiên khác) đã chơi tiếp.
+ * 2. `cloudUpdatedAt > localUpdatedAt` — và mới hơn chính tiến trình trên máy
+ *    này, tức là không phải bản cũ đang bị đẩy lên đè.
+ *
+ * Thiếu một trong hai ngưỡng là giữ local rồi đẩy local lên cloud.
+ */
+export function shouldPullCloud(input: {
+  cloudUpdatedAt: number;
+  markerUpdatedAt: number;
+  localUpdatedAt: number;
+}): boolean {
+  return input.cloudUpdatedAt > input.markerUpdatedAt && input.cloudUpdatedAt > input.localUpdatedAt;
 }

@@ -829,7 +829,6 @@ th {
   white-space: nowrap;
 }
 
-.hardcore-mark,
 .consequence-mark,
 .streak-mark {
   display: inline-flex;
@@ -845,11 +844,6 @@ th {
   background: var(--surface);
 }
 
-.hardcore-mark {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-
 .consequence-mark {
   background: var(--surface-subtle);
   color: var(--muted);
@@ -863,6 +857,12 @@ th {
 
 .streak-mark b {
   font-family: var(--font-display);
+}
+
+/* Cảnh báo báo chí (danh tiếng dưới 2 sao) — dùng chung hình dáng với các chip topbar. */
+.press-mark {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 /* Chip số người đang online trên topbar — cùng hàng với streak/golden hour. */
@@ -3701,10 +3701,6 @@ input[type='range'] {
   flex-wrap: wrap;
 }
 
-.hardcore-frame {
-  border: 2px solid var(--danger) !important;
-  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.15), var(--sh-1) !important;
-}
 
 .danger-card {
   background: var(--danger-soft);

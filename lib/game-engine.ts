@@ -43,10 +43,11 @@ import {
   PROFIT_PER_RESEARCH,
   PROFIT_PER_XP,
   SECOND_BASE_LEVEL,
+  STARTING_CASH,
   airportBuildCost,
   airportUnlockLevel,
   difficultyOf,
-  insolvencyDays as insolvencyDaysFor,
+  INSOLVENCY_DAYS,
   levelUpReward,
   scaleCost,
   xpRequiredFor,
@@ -102,9 +103,8 @@ export const initialState = (): GameState => ({
   pendingLevelUp: undefined,
   pendingOfflineSummary: null,
   currentSituation: null,
-  situationNextAt: Date.now() + situationDelayMs(false),
+  situationNextAt: Date.now() + situationDelayMs(),
   activeConsequences: [],
-  hardcore: false,
   redPriceSince: {},
   greenPriceSince: {},
   routeTitles: [],
@@ -134,12 +134,8 @@ export const TIME_SCALE = 60;
  */
 const SITUATION_MIN_MINUTES = 26; // chế độ thường
 const SITUATION_RANGE_MINUTES = 9; // +0–9 phút → trung bình ~30 phút
-const SITUATION_HARDCORE_MIN = 18;
-const SITUATION_HARDCORE_RANGE = 8;
-
 /** Khoảng cách đến tình huống tiếp theo, tính bằng mili-giây thực. */
-const situationDelayMs = (hardcore: boolean): number =>
-  ((hardcore ? SITUATION_HARDCORE_MIN : SITUATION_MIN_MINUTES) + Math.random() * (hardcore ? SITUATION_HARDCORE_RANGE : SITUATION_RANGE_MINUTES)) * 60000;
+const situationDelayMs = (): number => (SITUATION_MIN_MINUTES + Math.random() * SITUATION_RANGE_MINUTES) * 60000;
 
 /** Mốc thời gian hợp lệ của đồng hồ thực — dùng để nhận ra bản lưu cũ đang để mốc giờ game. */
 const MIN_WALL_CLOCK = Date.UTC(2020, 0, 1);
@@ -188,7 +184,7 @@ export function createAirline(
   },
   allAirports: Airport[]
 ): GameState {
-  const initialCapital = difficultyOf({ airline: { difficulty: input.difficulty } as Airline }).startingCash;
+  const initialCapital = STARTING_CASH;
 
   const newAirline: Airline = {
     name: input.name.trim(),
@@ -206,7 +202,6 @@ export function createAirline(
     lifetimePassengers: 0,
     autoManage: false,
       reputation: 70,
-      hardcore: false,
       inviteCode: `VNA${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
       updatedAt: Date.now(),
       version: 1,
@@ -254,7 +249,7 @@ export function createAirline(
     researchProfitRemainder: 0,
     lastCostTransactionAt: Date.now(),
     pendingOperatingCost: 0,
-    situationNextAt: Date.now() + situationDelayMs(false),
+    situationNextAt: Date.now() + situationDelayMs(),
     competitorPriceAt: 6 * 3600000,
     missions: [...starterMissions.map((m) => ({ ...m })), ...dailyMissions.map((m) => ({ ...m }))],
     lastDailyReset: dayId(),
@@ -1206,10 +1201,9 @@ export function tickGame(state: GameState, now = Date.now()): GameState {
   state = checkDailyRollover(state, now);
   if (!state.airline) return state;
   const previousWallTime = state.airline.lastTickAt || now;
-  const hardcore = state.hardcore ?? state.airline.hardcore ?? false;
   const loginBonusHours = (state.loginStreak || 0) >= 7 ? 2 : (state.loginStreak || 0) >= 3 ? 1 : 0;
   const baseBonusHours = state.airline.secondBaseAirport ? 2 : 0;
-  const baseCapHours = hardcore ? 4 : 8;
+  const baseCapHours = 8;
   const maxOfflineMs = (baseCapHours + loginBonusHours + baseBonusHours) * 3600000;
   const elapsedRealMs = Math.min(maxOfflineMs, Math.max(0, now - previousWallTime));
   if (elapsedRealMs < 900) return state;
@@ -1380,7 +1374,7 @@ export function tickGame(state: GameState, now = Date.now()): GameState {
   }));
 
   // Độ khó nhân vào tốc độ lên cấp: chế độ Dễ lên nhanh hơn, chế độ Khó chậm hơn.
-  const xpRate = (hardcore ? 1.5 : 1) * difficultyOf(state).xpMultiplier;
+  const xpRate = difficultyOf(state).xpMultiplier;
   let xpPool = (state.xpProfitRemainder || 0) + (Math.max(0, totalNetProfit) / PROFIT_PER_XP) * xpRate;
   const xpGained = Math.floor(xpPool);
   xpPool -= xpGained;
@@ -1399,16 +1393,16 @@ export function tickGame(state: GameState, now = Date.now()): GameState {
   let currentSituation = state.currentSituation ?? null;
   // `situationNextAt` là mốc đồng hồ thực nên so với `now`, KHÔNG phải `gameNow`.
   // Bản lưu cũ đang lưu mốc giờ game (số nhỏ) → coi như hết hạn, đặt lại theo quy luật mới.
-  let situationNextAt = isWallClock(state.situationNextAt) ? state.situationNextAt : now + situationDelayMs(hardcore);
+  let situationNextAt = isWallClock(state.situationNextAt) ? state.situationNextAt : now + situationDelayMs();
   if (!currentSituation && situationNextAt <= now) {
     currentSituation = pickFunnySituation();
-    situationNextAt = now + situationDelayMs(hardcore);
+    situationNextAt = now + situationDelayMs();
     addActivity({ id: `situation-${now}`, at: now, kind: 'situation', text: `Tình huống vận hành: ${currentSituation.title}` });
   }
   let eventTransactions: Transaction[] = [];
   let eventNotices: GameState['notices'] = [];
   let eventHistory = state.eventHistory;
-  if (!currentEvent && Math.random() < (hardcore ? 0.02 : 0.01)) {
+  if (!currentEvent && Math.random() < 0.01) {
     const triggered = triggerRandomEvent({ ...state, airline: { ...state.airline!, cash }, currentEvent: null, gameTimeMs: gameNow }, now);
     currentEvent = triggered.currentEvent;
     cash = triggered.airline?.cash ?? cash;
@@ -1583,7 +1577,7 @@ export function tickGame(state: GameState, now = Date.now()): GameState {
     lastCostTransactionAt: operatingCostLogged ? now : state.lastCostTransactionAt,
     updatedAt: now,
   };
-  const insolvencyDays = insolvencyDaysFor(hardcore);
+  const insolvencyDays = INSOLVENCY_DAYS;
   if (cash < 0 && nextAirline.negativeSince !== null && nextAirline.negativeSince !== undefined && gameNow - nextAirline.negativeSince >= insolvencyDays * 24 * 3600000) {
     const rescued = restructureAirline(result);
     return { ...rescued, notices: [createNotice(`Phá sản sau ${insolvencyDays} ngày game âm tiền. Bảo hiểm đã cứu 50% giá trị tài sản.`, 'warn'), ...rescued.notices] };
@@ -1597,10 +1591,9 @@ export function resolveFunnySituation(state: GameState, choiceId: string, random
   const choice = situation?.choices.find((x) => x.id === choiceId);
   if (!situation || !choice || !state.airline) return state;
   const pressChain = (state.activeConsequences || []).some((c) => c.title.includes('theo dõi') && c.expiresAt > gameTimeMs) && situation.group === 'Truyền thông';
-  const hardcoreFactor = state.hardcore || state.airline.hardcore ? 1.35 : 1;
   let amount = Math.round(choice.cashMin + random() * (choice.cashMax - choice.cashMin));
-  if (pressChain || (hardcoreFactor > 1 && amount < 0)) amount = Math.round(amount * (pressChain ? 2 : hardcoreFactor));
-  const reputation = Math.max(0, Math.min(100, (state.airline.reputation ?? 70) + Math.round(choice.reputation * (pressChain || (hardcoreFactor > 1 && choice.reputation < 0) ? hardcoreFactor : 1))));
+  if (pressChain) amount = Math.round(amount * 2);
+  const reputation = Math.max(0, Math.min(100, (state.airline.reputation ?? 70) + Math.round(choice.reputation * (pressChain ? 2 : 1))));
   const resultText = amount >= 0 ? `thu ${Math.round(amount).toLocaleString('vi-VN')} $` : `tốn ${Math.round(-amount).toLocaleString('vi-VN')} $`;
   const chain = choice.chain ? [{ id: choice.chain.id, title: choice.chain.title, startsAt: gameTimeMs, expiresAt: gameTimeMs + choice.chain.durationHours * 3600000, severity: choice.chain.severity }] : [];
   return {
@@ -1611,12 +1604,6 @@ export function resolveFunnySituation(state: GameState, choiceId: string, random
     transactions: [createTransaction('Sự kiện', amount, `${situation.title}: ${resultText}`), ...state.transactions].slice(0, 300),
     notices: [createNotice(`${situation.title} — ${choice.label}: ${resultText}. Danh tiếng ${choice.reputation >= 0 ? '+' : ''}${choice.reputation}.`, amount < 0 ? 'warn' : 'success'), ...state.notices].slice(0, 50),
   };
-}
-
-/** Hardcore chỉ đổi được khi không còn khoản vay. */
-export function setHardcoreMode(state: GameState, enabled: boolean): GameState {
-  if (state.loan > 0 || !state.airline) return state;
-  return { ...state, hardcore: enabled, airline: { ...state.airline, hardcore: enabled, updatedAt: Date.now(), version: (state.airline.version || 1) + 1 } };
 }
 
 /** Chiến dịch phục hồi danh tiếng; dưới 2 sao chi phí tăng gấp đôi. */
@@ -1709,7 +1696,6 @@ export function goPublic(state: GameState, now = Date.now()): GameState {
     soundEnabled: state.soundEnabled,
     tutorialDone: true,
     simpleMode: state.simpleMode,
-    hardcore: state.hardcore,
     loan: 0,
     ipoCount: (state.ipoCount || 0) + 1,
     pendingIpo: { shares, valuation, flights: state.airline.lifetimeFlights || 0, passengers: state.airline.lifetimePassengers || 0 },

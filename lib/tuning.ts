@@ -21,8 +21,6 @@ export interface DifficultyConfig {
   label: string;
   /** Mô tả đúng với hiệu ứng thật trong engine — dùng nguyên văn ở onboarding. */
   tagline: string;
-  /** Vốn khởi đầu. */
-  startingCash: number;
   /** Nhân vào nhu cầu mọi tuyến. >1 = dễ kiếm tiền, <1 = chật. */
   demandMultiplier: number;
   /** Nhân vào mọi chi phí mở rộng (slot, căn cứ, xây sân bay, đào tạo, marketing). */
@@ -31,12 +29,18 @@ export interface DifficultyConfig {
   xpMultiplier: number;
 }
 
+/**
+ * Vốn khởi đầu là CỐ ĐỊNH cho mọi hãng bay — người chơi không được chọn.
+ * Đủ để mua ngay một đội bay nhỏ và dự phòng, nên phút đầu tiên không bao giờ
+ * bị kẹt vì thiếu tiền; khó khăn nằm ở vận hành chứ không ở ví tiền.
+ */
+export const STARTING_CASH = 100000000;
+
 export const DIFFICULTIES: Record<DifficultyId, DifficultyConfig> = {
   de: {
     id: 'de',
     label: 'Dễ',
-    tagline: 'Nhu cầu +20%, mọi chi phí mở rộng giảm 30%. Dành cho lần đầu chơi.',
-    startingCash: 25000000,
+    tagline: 'Nhu cầu +20%, mọi chi phí mở rộng giảm 30%, XP nhanh hơn 25%. Dành cho lần đầu chơi.',
     demandMultiplier: 1.2,
     costMultiplier: 0.7,
     xpMultiplier: 1.25,
@@ -45,7 +49,6 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyConfig> = {
     id: 'thuong',
     label: 'Thường',
     tagline: 'Cân bằng — nhu cầu và chi phí giữ nguyên. Đây là trải nghiệm chuẩn của game.',
-    startingCash: 15000000,
     demandMultiplier: 1,
     costMultiplier: 1,
     xpMultiplier: 1,
@@ -54,7 +57,6 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyConfig> = {
     id: 'kho',
     label: 'Khó',
     tagline: 'Nhu cầu −15%, chi phí mở rộng +25%, XP chậm hơn 20%. Chơi sau khi quen luồng cơ bản.',
-    startingCash: 8000000,
     demandMultiplier: 0.85,
     costMultiplier: 1.25,
     xpMultiplier: 0.8,
@@ -118,7 +120,7 @@ export const airportBuildCost = (region: string): number => {
 export const LOAN_DAILY_RATE = 0.04;
 
 /** Số ngày game âm tiền liên tục trước khi bị phá sản hoá. */
-export const insolvencyDays = (hardcore: boolean): number => (hardcore ? 3 : 10);
+export const INSOLVENCY_DAYS = 10;
 
 /** Cấp mở khóa căn cứ thứ 2. */
 export const SECOND_BASE_LEVEL = 8;

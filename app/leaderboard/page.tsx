@@ -31,7 +31,6 @@ interface CompetitorProfile {
   isPlayer?: boolean;
   friendCode: string;
   reputation?: number;
-  isHardcore?: boolean;
   fleet?: string[];
   topRoutes?: string[];
 }
@@ -87,7 +86,6 @@ function LeaderboardContent() {
         routesCount: routes.length,
         baseHub: airline?.baseAirport || 'SGN',
         isPlayer: true,
-        isHardcore: !!airline?.hardcore,
         reputation: airline?.reputation ?? 70,
         fleet: planes.map(p=>p.name||p.model),
         topRoutes: routes.slice(0,3).map(r=>r.from+' → '+r.to),
@@ -214,7 +212,7 @@ function LeaderboardContent() {
             {fullList.slice(0, 3).map((comp, idx) => (
               <div
                 key={comp.name}
-                className={`card ${comp.isHardcore?'hardcore-frame':''} ${idx === 0 ? 'podium-first' : ''} ${comp.isPlayer ? 'podium-self' : ''}`}
+                className={`card ${idx === 0 ? 'podium-first' : ''} ${comp.isPlayer ? 'podium-self' : ''}`}
                 onClick={() => { setProfileDetail(null); setSelectedProfile(comp); }}
                 style={{
                   textAlign: 'center',
@@ -226,7 +224,7 @@ function LeaderboardContent() {
                   HẠNG #{idx + 1}
                 </div>
                 <b style={{ fontSize: 16, display: 'block', margin: '4px 0' }}>
-                  {comp.name} {comp.isPlayer ? '(Bạn)' : ''} {comp.isHardcore&&<span className="hardcore-mark">⚡ Hardcore</span>}
+                  {comp.name} {comp.isPlayer ? '(Bạn)' : ''}
                 </b>
                 <div className="tabular-nums" style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue)', margin: '8px 0 4px' }}>
                   {formatCurrency(comp.valuation, currency)}
@@ -280,7 +278,7 @@ function LeaderboardContent() {
                       <td>
                         <b style={{ fontSize: 14 }}>
                           {comp.isPlayer ? '✈️ ' : ''}
-                          {comp.name} {comp.isPlayer ? '(Bạn)' : ''} {comp.isHardcore&&<span className="hardcore-mark">⚡ Hardcore</span>}
+                          {comp.name} {comp.isPlayer ? '(Bạn)' : ''}
                         </b>
                       </td>
                       <td>

@@ -192,7 +192,7 @@ function DashboardContent() {
         }
       />
 
-      {!game.hardcore&&<div className={`recommendation-card urgency-${nextStep.urgency}`} data-coach="next"><span className="rec-orbit"><Sparkles size={21}/></span><div className="rec-copy"><span className="eyebrow">NÊN LÀM GÌ TIẾP THEO?</span><h2>{nextStep.title}</h2><p>{nextStep.text}</p><div className="rec-reasons"><span><b>Vì sao?</b> {nextStep.why}</span><span><b>Đổi lại được?</b> {nextStep.earn}</span></div></div><Link className="btn rec-button" href={nextStep.href}>{nextStep.cta}<ChevronRight size={16}/></Link></div>}
+      <div className={`recommendation-card urgency-${nextStep.urgency}`} data-coach="next"><span className="rec-orbit"><Sparkles size={21}/></span><div className="rec-copy"><span className="eyebrow">NÊN LÀM GÌ TIẾP THEO?</span><h2>{nextStep.title}</h2><p>{nextStep.text}</p><div className="rec-reasons"><span><b>Vì sao?</b> {nextStep.why}</span><span><b>Đổi lại được?</b> {nextStep.earn}</span></div></div><Link className="btn rec-button" href={nextStep.href}>{nextStep.cta}<ChevronRight size={16}/></Link></div>
 
       <LoginStrip />
       <WeeklyStrip />

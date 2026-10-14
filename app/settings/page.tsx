@@ -13,7 +13,6 @@ import {
   Coins,
   Sparkles,
   Bot,
-  AlertTriangle,
   RotateCcw,
 } from 'lucide-react';
 import { GameShell, PageHeading } from '@/components/game-shell';
@@ -38,9 +37,7 @@ function SettingsContent() {
   const {
     airline,
     simpleMode,
-    hardcore,
     loan,
-    toggleHardcore,
     currency,
     setCurrency,
     soundEnabled,
@@ -199,11 +196,6 @@ function SettingsContent() {
                 onClick={() => update((s) => ({ ...s, simpleMode: !(s.simpleMode ?? true) }))}
               ><i /></button>
             </div>
-            <div className="settings-toggle">
-              <span className="settings-toggle-icon"><AlertTriangle size={18} /></span>
-              <div className="settings-toggle-copy"><b>Chế độ Hardcore</b><small>Sự kiện dày gấp đôi, phá sản sau 3 ngày âm tiền, offline tối đa 4 giờ và nhận XP gấp 1,5 lần. Có huy hiệu đặc biệt.</small>{loan > 0 && <small style={{ color: 'var(--danger)' }}>Trả hết khoản vay để đổi chế độ.</small>}</div>
-              <button type="button" role="switch" aria-label="Chế độ Hardcore" aria-checked={!!hardcore} disabled={loan > 0} className={`switch ${hardcore ? 'on' : ''}`} onClick={toggleHardcore}><i /></button>
-            </div>
             {/* Auto-Manager AI (Level 15 unlock) */}
             <div className="control-row">
               <div>
@@ -353,9 +345,9 @@ function SettingsContent() {
                   value={newDifficulty}
                   onChange={(e) => setNewDifficulty(e.target.value as any)}
                 >
-                  <option value="de">Dễ (Vốn 25.000.000 $ · Nhu cầu +20%, chi phí −30%)</option>
-                  <option value="thuong">Thường (Vốn 15.000.000 $ · Cân bằng)</option>
-                  <option value="kho">Khó (Vốn 8.000.000 $ · Nhu cầu −15%, chi phí +25%)</option>
+                  <option value="de">Dễ (Nhu cầu +20%, chi phí −30%)</option>
+                  <option value="thuong">Thường (Cân bằng)</option>
+                  <option value="kho">Khó (Nhu cầu −15%, chi phí +25%)</option>
                 </select>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>

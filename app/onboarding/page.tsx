@@ -6,7 +6,7 @@ import { Check, ArrowRight, Plane, Building2, Shield, Sparkles } from 'lucide-re
 import { useGameStore } from '@/store/useGameStore';
 import { airports } from '@/lib/mock-data';
 import { formatCurrency } from '@/lib/formulas';
-import { DIFFICULTIES } from '@/lib/tuning';
+import { DIFFICULTIES, STARTING_CASH } from '@/lib/tuning';
 
 const colors = [
   '#0A58CA', // Xanh Dương Hàng Không
@@ -231,14 +231,18 @@ export default function Onboarding() {
         {/* STEP 3: Difficulty */}
         {step === 2 && (
           <div>
-            <label className="label">Chọn độ khó và quy mô khởi nghiệp</label>
+            <label className="label">Chọn độ khó vận hành</label>
+            <p className="muted" style={{ margin: '0 0 14px', fontSize: 12.5 }}>
+              Mọi hãng bay đều khởi đầu với {formatCurrency(STARTING_CASH, 'USD')} — không chọn vốn.
+              Độ khó chỉ quyết định thị trường và chi phí sau đó.
+            </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {(['de', 'thuong', 'kho'] as const).map((id) => {
                 const config = DIFFICULTIES[id];
                 const item = {
                   id,
                   title: `${config.label} (${id === 'de' ? 'Easy' : id === 'kho' ? 'Hard' : 'Normal'})`,
-                  cash: formatCurrency(config.startingCash, 'USD'),
+                  cash: `Nhu cầu ×${config.demandMultiplier} · Chi phí ×${config.costMultiplier}`,
                   desc: config.tagline,
                 };
                 return (
