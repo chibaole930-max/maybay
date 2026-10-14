@@ -353,9 +353,9 @@ function SettingsContent() {
                   value={newDifficulty}
                   onChange={(e) => setNewDifficulty(e.target.value as any)}
                 >
-                  <option value="de">Dễ (Vốn 15.000.000 $ · Nhu cầu cao)</option>
-                  <option value="thuong">Thường (Vốn 10.000.000 $ · Cân bằng)</option>
-                  <option value="kho">Khó (Vốn 6.000.000 $ · Nhu cầu giảm 10%)</option>
+                  <option value="de">Dễ (Vốn 25.000.000 $ · Nhu cầu +20%, chi phí −30%)</option>
+                  <option value="thuong">Thường (Vốn 15.000.000 $ · Cân bằng)</option>
+                  <option value="kho">Khó (Vốn 8.000.000 $ · Nhu cầu −15%, chi phí +25%)</option>
                 </select>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>

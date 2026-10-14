@@ -163,7 +163,12 @@ export const seasonIdFor = (now: number): string => {
 
 const seasonEndFor = (now: number): number => new Date(new Date(now).getFullYear(), new Date(now).getMonth() + 1, 0, 23, 59, 59).getTime();
 
-/** Su kien toan server xoay vong theo gio thuc — client poll 60s/lan, khong can websocket. */
+/**
+ * Su kien toan server xoay vong theo gio thuc — client poll 60s/lan, khong can websocket.
+ *
+ * `worldState` la dong bo vi thoi su kien khong can doc DB; phan dem nguoi choi
+ * thi tach ra `presence()` — cai do doc `vat:db`, nen endpoint phai `await`.
+ */
 export function worldState(now = Date.now()) {
   const hour = new Date(now).getHours();
   const golden = hour >= 19 && hour < 21;
@@ -172,6 +177,31 @@ export function worldState(now = Date.now()) {
     title: golden ? 'Tuan le vang toan server: nhu cau +20%' : 'Ngay thuong',
     golden,
     serverTime: now,
+  };
+}
+
+/**
+ * So nguoi choi dang online THAT, tinh tu heartbeat cua client.
+ *
+ * Client `useOnlineSync` bao cap moi 60s (`updatePilotStats` gan `updatedAt`),
+ * nen mot tai khoan co `updatedAt` trong 5 phut la dang mo game. Cu so sanh do
+ * chinh la nguoi dang choi, khong phai so tai khoan da tung dang ky.
+ *
+ * `activeToday` dung 24 gio giong muc "X/Y hang dang choi" o trang nhiem vu.
+ */
+const PRESENCE_WINDOW_MS = 5 * 60 * 1000;
+const ACTIVE_TODAY_MS = 24 * 60 * 60 * 1000;
+
+export async function presence(now = Date.now()) {
+  const db = await readDB();
+  const online = db.pilots.filter((p) => p.updatedAt > now - PRESENCE_WINDOW_MS);
+  const active = db.pilots.filter((p) => p.updatedAt > now - ACTIVE_TODAY_MS);
+  return {
+    online: online.length,
+    activeToday: active.length,
+    total: db.pilots.length,
+    totalPlanes: online.reduce((sum, p) => sum + p.planes, 0),
+    totalRoutes: online.reduce((sum, p) => sum + p.routes, 0),
   };
 }
 

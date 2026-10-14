@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Check, ArrowRight, Plane, Building2, Shield, Sparkles } from 'lucide-react';
 import { useGameStore } from '@/store/useGameStore';
 import { airports } from '@/lib/mock-data';
+import { formatCurrency } from '@/lib/formulas';
+import { DIFFICULTIES } from '@/lib/tuning';
 
 const colors = [
   '#0A58CA', // Xanh Dương Hàng Không
@@ -231,26 +233,15 @@ export default function Onboarding() {
           <div>
             <label className="label">Chọn độ khó và quy mô khởi nghiệp</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[
-                {
-                  id: 'de' as const,
-                  title: 'Dễ (Easy)',
-                  cash: '15.000.000 $',
-                  desc: 'Vốn dồi dào, nhu cầu hành khách cao, kinh doanh thuận lợi cho tân thủ.',
-                },
-                {
-                  id: 'thuong' as const,
-                  title: 'Thường (Normal)',
-                  cash: '10.000.000 $',
-                  desc: 'Trải nghiệm chuẩn mực, kinh tế cân bằng, thử thách thực tế.',
-                },
-                {
-                  id: 'kho' as const,
-                  title: 'Khó (Hard)',
-                  cash: '6.000.000 $',
-                  desc: 'Vốn eo hẹp, nhu cầu thị trường giảm 10%, đòi hỏi tư duy chiến lược cao.',
-                },
-              ].map((item) => (
+              {(['de', 'thuong', 'kho'] as const).map((id) => {
+                const config = DIFFICULTIES[id];
+                const item = {
+                  id,
+                  title: `${config.label} (${id === 'de' ? 'Easy' : id === 'kho' ? 'Hard' : 'Normal'})`,
+                  cash: formatCurrency(config.startingCash, 'USD'),
+                  desc: config.tagline,
+                };
+                return (
                 <div
                   key={item.id}
                   onClick={() => setDifficulty(item.id)}
@@ -278,7 +269,8 @@ export default function Onboarding() {
                   </div>
                   {difficulty === item.id && <Check color="var(--blue)" size={20} />}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

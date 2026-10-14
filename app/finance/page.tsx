@@ -35,6 +35,7 @@ import {
 } from '@/components/game-shell';
 import { useGameStore } from '@/store/useGameStore';
 import { airlineValue, formatCurrency } from '@/lib/formulas';
+import { LOAN_DAILY_RATE } from '@/lib/tuning';
 
 function FinanceContent() {
   const {
@@ -285,7 +286,7 @@ function FinanceContent() {
               <b className="negative">-{formatCurrency(breakdownStats.airportExpense, currency)}</b>
             </div>
             {!simpleMode&&<div className="kv">
-              <span>Lãi vay ngân hàng (5%/ngày)</span>
+              <span>Lãi vay ngân hàng ({LOAN_DAILY_RATE * 100}%/ngày)</span>
               <b className="negative">-{formatCurrency(loan * 0.05, currency)}/ngày</b>
             </div>}
           </div>

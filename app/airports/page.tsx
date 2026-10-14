@@ -20,6 +20,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { formatCurrency } from '@/lib/formulas';
 import type { Airport } from '@/types';
 import type { AirportDraft } from '@/lib/geo-naming';
+import { BASE_COSTS, SECOND_BASE_LEVEL, difficultyOf, scaleCost } from '@/lib/tuning';
 
 // Leaflet cần window nên chỉ nạp ở phía trình duyệt.
 const AirportPickerMap = dynamic(
@@ -53,6 +54,8 @@ function AirportsContent() {
   const [showPicker, setShowPicker] = useState(false);
   const [draft, setDraft] = useState<AirportDraft | null>(null);
   const [sharedCount, setSharedCount] = useState<number | null>(null);
+  // Phí căn cứ thứ 2 nhân theo độ khó đang chơi — cùng con số với engine tính.
+  const secondBaseCost = scaleCost(BASE_COSTS.secondBase, difficultyOf({ airline }));
 
   // Kéo sân bay từ kho chung về; lỗi mạng không chặn game.
   const syncShared = useCallback(async () => {
@@ -166,7 +169,7 @@ function AirportsContent() {
             <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
               {secondBaseAirport
                 ? `Hãng đã có 2 căn cứ chiến lược: ${baseAirport} và ${secondBaseAirport}. Giảm 20% phí hạ cánh tại cả hai sân bay!`
-                : 'Yêu cầu: Hãng bay Cấp 10 + Phí đầu tư 5.000.000 $. Giảm 20% vĩnh viễn phí hạ cánh cho căn cứ phụ.'}
+                : `Yêu cầu: Hãng bay cấp ${SECOND_BASE_LEVEL} + Phí đầu tư ${formatCurrency(secondBaseCost, 'USD')}. Giảm 20% vĩnh viễn phí hạ cánh cho căn cứ phụ.`}
             </div>
           </div>
         </div>
@@ -362,7 +365,7 @@ function AirportsContent() {
               Thiết lập {selectedForBase.city} ({selectedForBase.code}) làm Căn cứ thứ 2?
             </h3>
             <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
-              Việc thiết lập căn cứ phụ sẽ tiêu tốn <b>5.000.000 $</b> chi phí đầu tư hạ tầng ban đầu.
+              Việc thiết lập căn cứ phụ sẽ tiêu tốn <b>{formatCurrency(secondBaseCost, 'USD')}</b> chi phí đầu tư hạ tầng ban đầu.
               Sau khi thành lập, tất cả các chuyến bay cất hoặc hạ cánh tại {selectedForBase.code} sẽ được
               giảm vĩnh viễn <b>20%</b> phí sân bay.
             </p>
@@ -373,10 +376,10 @@ function AirportsContent() {
               </button>
               <button
                 className="btn"
-                disabled={(airline?.cash || 0) < 5000000}
+                disabled={(airline?.cash || 0) < secondBaseCost}
                 onClick={handleConfirmSecondBase}
               >
-                Xác nhận đầu tư (5.000.000 $)
+                Xác nhận đầu tư ({formatCurrency(secondBaseCost, 'USD')})
               </button>
             </div>
           </div>

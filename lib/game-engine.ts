@@ -36,6 +36,21 @@ import {
 } from './mock-data';
 import { pickFunnySituation } from './funny-events';
 import { milestoneTemplates } from './milestones';
+import {
+  AIRPORT_UNLOCK_LEVELS,
+  BASE_COSTS,
+  LOAN_DAILY_RATE,
+  PROFIT_PER_RESEARCH,
+  PROFIT_PER_XP,
+  SECOND_BASE_LEVEL,
+  airportBuildCost,
+  airportUnlockLevel,
+  difficultyOf,
+  insolvencyDays as insolvencyDaysFor,
+  levelUpReward,
+  scaleCost,
+  xpRequiredFor,
+} from './tuning';
 
 /** Helpers retention: dayId theo ngày thực, weekId Thứ 2→CN. */
 export const dayId = (d = new Date()): string => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
@@ -173,12 +188,7 @@ export function createAirline(
   },
   allAirports: Airport[]
 ): GameState {
-  const initialCapital =
-    input.difficulty === 'de'
-      ? 15000000
-      : input.difficulty === 'kho'
-      ? 6000000
-      : 10000000;
+  const initialCapital = difficultyOf({ airline: { difficulty: input.difficulty } as Airline }).startingCash;
 
   const newAirline: Airline = {
     name: input.name.trim(),
@@ -498,7 +508,7 @@ export function openRoute(
   const plane = state.planes.find((p) => p.id === input.planeId);
 
   if (!fromAirport || !toAirport || !plane) return state;
-  const unlockAt = (code: string) => ['BKK','SIN','KUL','MNL','CGK','DPS','HKT','PNH','VTE','RGN','BWN','REP'].includes(code) ? 5 : ['NRT','ICN','TPE','HKG','PVG','PEK','KIX','FUK','GMP','CAN'].includes(code) ? 10 : ['LHR','CDG','FRA','DXB','SYD','LAX','AMS','MAD','YYZ','GRU'].includes(code) ? 15 : 1;
+  const unlockAt = airportUnlockLevel;
   if (Math.max(unlockAt(fromAirport.code), unlockAt(toAirport.code)) > state.airline.level) return { ...state, notices: [createNotice(`Sân bay này sẽ mở theo khu vực ở cấp ${Math.max(unlockAt(fromAirport.code), unlockAt(toAirport.code))}.`, 'warn'), ...state.notices] };
   if (fromAirport.code === toAirport.code) return state;
   if (fromAirport.slotsUsed >= fromAirport.slots || toAirport.slotsUsed >= toAirport.slots)
@@ -526,11 +536,11 @@ export function openRoute(
       fuelSaveBonus: (state.research.fuel || 0) * 0.025,
       serviceBonus: 1 + (state.research.service || 0) * 0.04,
       crewCostPerHour: state.staff.reduce((s, x) => s + x.salaryPerHour, 0),
-      loanInterestPerHour: (state.loan * 0.05) / 24,
+      loanInterestPerHour: (state.loan * LOAN_DAILY_RATE) / 24,
       reputation: state.airline.reputation ?? 70,
       international: fromAirport.country !== 'Việt Nam' || toAirport.country !== 'Việt Nam',
       fuelMultiplier: state.currentEvent?.fuelMultiplier ?? 1,
-      demandMultiplier: state.currentEvent?.demandMultiplier ?? 1,
+      demandMultiplier: (state.currentEvent?.demandMultiplier ?? 1) * (state.worldDemand ?? 1) * difficultyOf(state).demandMultiplier,
       isStormAffected: state.currentEvent?.affectedAirports?.includes(fromAirport.code) ||
         state.currentEvent?.affectedAirports?.includes(toAirport.code),
     }
@@ -640,7 +650,7 @@ export function updateRoute(
       fuelSaveBonus: (state.research.fuel || 0) * 0.025,
       serviceBonus: 1 + (state.research.service || 0) * 0.04,
       crewCostPerHour: state.staff.reduce((s, x) => s + x.salaryPerHour, 0),
-      loanInterestPerHour: (state.loan * 0.05) / 24,
+      loanInterestPerHour: (state.loan * LOAN_DAILY_RATE) / 24,
       reputation: state.airline.reputation ?? 70,
       international: fromAirport.country !== 'Việt Nam' || toAirport.country !== 'Việt Nam',
     }
@@ -703,9 +713,9 @@ export function closeRoute(state: GameState, routeId: string): GameState {
  */
 export function buyAirportSlot(state: GameState, airportCode: string): GameState {
   if (!state.airline) return state;
-  const unlockAt = (code: string) => ['BKK','SIN','KUL','MNL','CGK','DPS','HKT','PNH','VTE','RGN','BWN','REP'].includes(code) ? 5 : ['NRT','ICN','TPE','HKG','PVG','PEK','KIX','FUK','GMP','CAN'].includes(code) ? 10 : ['LHR','CDG','FRA','DXB','SYD','LAX','AMS','MAD','YYZ','GRU'].includes(code) ? 15 : 1;
+  const unlockAt = airportUnlockLevel;
   if (unlockAt(airportCode) > state.airline.level) return { ...state, notices: [createNotice(`Khu vực sân bay này mở khóa ở cấp ${unlockAt(airportCode)}.`, 'warn'), ...state.notices] };
-  const cost = 50000;
+  const cost = scaleCost(BASE_COSTS.airportSlot, difficultyOf(state));
   if (state.airline.cash < cost) return state;
 
   const airport = state.airports.find((a) => a.code === airportCode);
@@ -738,11 +748,11 @@ export function buyAirportSlot(state: GameState, airportCode: string): GameState
 }
 
 /**
- * 11. Mở căn cứ thứ 2 (Level 10+, phí 5.000.000 $)
+ * 11. Mở căn cứ thứ 2 (cấp `SECOND_BASE_LEVEL`, phí cơ sở đã nhân theo độ khó)
  */
 export function unlockSecondBase(state: GameState, airportCode: string): GameState {
-  if (!state.airline || state.airline.level < 10) return state;
-  const cost = 5000000;
+  if (!state.airline || state.airline.level < SECOND_BASE_LEVEL) return state;
+  const cost = scaleCost(BASE_COSTS.secondBase, difficultyOf(state));
   if (state.airline.cash < cost) return state;
 
   const airport = state.airports.find((a) => a.code === airportCode);
@@ -780,12 +790,7 @@ export function unlockSecondBase(state: GameState, airportCode: string): GameSta
  * 11b. Mở sân bay mới do người chơi tự đặt vị trí trên bản đồ.
  * Phí khảo sát và xây dựng càng đắt khi sân bay càng xa VN.
  */
-const AIRPORT_BUILD_COST = (region: string): number => {
-  if (region === 'Việt Nam') return 400000;
-  if (region === 'Đông Nam Á') return 900000;
-  if (region === 'Đông Á') return 1800000;
-  return 2800000;
-};
+const AIRPORT_BUILD_COST = (region: string): number => airportBuildCost(region);
 
 export function createAirportFromDraft(state: GameState, draft: AirportDraft): GameState {
   if (!state.airline) return state;
@@ -793,7 +798,7 @@ export function createAirportFromDraft(state: GameState, draft: AirportDraft): G
     return { ...state, notices: [createNotice(`Mã sân bay ${draft.code} đã tồn tại.`, 'warn'), ...state.notices] };
   }
 
-  const cost = AIRPORT_BUILD_COST(draft.region);
+  const cost = scaleCost(AIRPORT_BUILD_COST(draft.region), difficultyOf(state));
   if (state.airline.cash < cost) {
     return { ...state, notices: [createNotice(`Cần ${cost.toLocaleString('vi-VN')} $ để xây dựng sân bay này.`, 'warn'), ...state.notices] };
   }
@@ -877,7 +882,7 @@ export function trainStaff(state: GameState, staffId: string): GameState {
   const member = state.staff.find((s) => s.id === staffId);
   if (!member || member.skill >= 5) return state;
 
-  const cost = member.skill * 15000;
+  const cost = scaleCost(member.skill * BASE_COSTS.staffTrainingPerSkill, difficultyOf(state));
   if (state.airline.cash < cost) return state;
 
   const tx = createTransaction(
@@ -925,7 +930,7 @@ export function borrowLoan(state: GameState, amount: number): GameState {
   const tx = createTransaction(
     'Vay ngân hàng',
     borrowAmt,
-    `Giải ngân khoản vay thương mại lãi suất 5%/ngày`,
+    `Giải ngân khoản vay thương mại lãi suất ${LOAN_DAILY_RATE * 100}%/ngày`,
     'loan'
   );
 
@@ -1178,10 +1183,10 @@ export function claimLoginReward(state: GameState, now = Date.now(), catalogAtr?
   };
 }
 
-/** Nhận offline x2: tốn 50.000 $ marketing để cộng thêm đúng bằng lợi nhuận offline. */
+/** Nhận offline x2: tốn một khoản phí nhỏ để cộng thêm đúng bằng lợi nhuận offline. */
 export function claimOfflineDouble(state: GameState): GameState {
   if (!state.airline || !state.pendingOfflineSummary) return state;
-  const cost = 50000;
+  const cost = scaleCost(BASE_COSTS.offlineDouble, difficultyOf(state));
   if (state.airline.cash < cost) return { ...state, notices: [createNotice(`Cần ${cost.toLocaleString('vi-VN')} $ để nhân đôi thưởng offline.`, 'warn'), ...state.notices] };
   const bonus = Math.max(0, Math.round(state.pendingOfflineSummary.totalProfit));
   if (bonus <= 0) return { ...state, pendingOfflineSummary: null };
@@ -1236,7 +1241,7 @@ export function tickGame(state: GameState, now = Date.now()): GameState {
     goldenHourNextAt += 12 * 3600000;
   }
   const isGolden = !!goldenHour && gameNow >= goldenHour.startsAt && gameNow < goldenHour.endsAt;
-  const eventDemand = (currentEvent?.demandMultiplier ?? 1) * (isGolden ? 1.5 : 1) * (state.worldDemand ?? 1) * (state.marketingPenaltyUntil && state.marketingPenaltyUntil > gameNow ? 0.9 : 1);
+  const eventDemand = (currentEvent?.demandMultiplier ?? 1) * (isGolden ? 1.5 : 1) * (state.worldDemand ?? 1) * difficultyOf(state).demandMultiplier * (state.marketingPenaltyUntil && state.marketingPenaltyUntil > gameNow ? 0.9 : 1);
 
   const econByRoute = new Map<string, ReturnType<typeof routeEconomics>>();
   const routeProfitPerHour = new Map<string, number>();
@@ -1256,7 +1261,7 @@ export function tickGame(state: GameState, now = Date.now()): GameState {
       fuelSaveBonus: (state.research.fuel || 0) * 0.025,
       serviceBonus: 1 + (state.research.service || 0) * 0.04,
       crewCostPerHour: state.staff.reduce((sum, member) => sum + member.salaryPerHour, 0),
-      loanInterestPerHour: (state.loan * 0.05) / 24,
+      loanInterestPerHour: (state.loan * LOAN_DAILY_RATE) / 24,
       reputation: state.airline?.reputation ?? 70,
       routeDemandBonus: route.goodPriceBonus ? 1.03 : 1,
       international,
@@ -1374,18 +1379,20 @@ export function tickGame(state: GameState, now = Date.now()): GameState {
     version: (plane.version || 1) + 1,
   }));
 
-  let xpPool = (state.xpProfitRemainder || 0) + Math.max(0, totalNetProfit) / 10000 * (hardcore ? 1.5 : 1);
+  // Độ khó nhân vào tốc độ lên cấp: chế độ Dễ lên nhanh hơn, chế độ Khó chậm hơn.
+  const xpRate = (hardcore ? 1.5 : 1) * difficultyOf(state).xpMultiplier;
+  let xpPool = (state.xpProfitRemainder || 0) + (Math.max(0, totalNetProfit) / PROFIT_PER_XP) * xpRate;
   const xpGained = Math.floor(xpPool);
   xpPool -= xpGained;
   let currentXp = state.airline.xp + xpGained;
   let currentLevel = state.airline.level;
   let pendingLevelUp = state.pendingLevelUp;
-  while (currentXp >= currentLevel * 1000) {
-    currentXp -= currentLevel * 1000;
+  while (currentXp >= xpRequiredFor(currentLevel)) {
+    currentXp -= xpRequiredFor(currentLevel);
     const oldLevel = currentLevel++;
-    pendingLevelUp = { oldLevel, newLevel: currentLevel, reward: currentLevel * 500000 };
+    pendingLevelUp = { oldLevel, newLevel: currentLevel, reward: levelUpReward(currentLevel) };
   }
-  let researchPool = (state.researchProfitRemainder || 0) + Math.max(0, totalNetProfit) / 1000000;
+  let researchPool = (state.researchProfitRemainder || 0) + Math.max(0, totalNetProfit) / PROFIT_PER_RESEARCH;
   const researchGained = Math.floor(researchPool);
   researchPool -= researchGained;
 
@@ -1576,7 +1583,7 @@ export function tickGame(state: GameState, now = Date.now()): GameState {
     lastCostTransactionAt: operatingCostLogged ? now : state.lastCostTransactionAt,
     updatedAt: now,
   };
-  const insolvencyDays = hardcore ? 3 : 7;
+  const insolvencyDays = insolvencyDaysFor(hardcore);
   if (cash < 0 && nextAirline.negativeSince !== null && nextAirline.negativeSince !== undefined && gameNow - nextAirline.negativeSince >= insolvencyDays * 24 * 3600000) {
     const rescued = restructureAirline(result);
     return { ...rescued, notices: [createNotice(`Phá sản sau ${insolvencyDays} ngày game âm tiền. Bảo hiểm đã cứu 50% giá trị tài sản.`, 'warn'), ...rescued.notices] };
@@ -1615,7 +1622,7 @@ export function setHardcoreMode(state: GameState, enabled: boolean): GameState {
 /** Chiến dịch phục hồi danh tiếng; dưới 2 sao chi phí tăng gấp đôi. */
 export function runMarketingCampaign(state: GameState): GameState {
   if (!state.airline) return state;
-  const cost = 50000 * marketingCostMultiplier(state.airline.reputation ?? 70);
+  const cost = scaleCost(BASE_COSTS.marketingCampaign, difficultyOf(state)) * marketingCostMultiplier(state.airline.reputation ?? 70);
   if (state.airline.cash < cost) return { ...state, notices: [createNotice(`Cần ${cost.toLocaleString('vi-VN')} $ để chạy chiến dịch tiếp thị.`, 'warn'), ...state.notices] };
   return { ...state, airline: { ...state.airline, cash: state.airline.cash-cost, reputation: Math.min(100,(state.airline.reputation??70)+5), updatedAt: Date.now(), version:(state.airline.version||1)+1 }, transactions:[createTransaction('Sự kiện',-cost,'Chiến dịch truyền thông phục hồi danh tiếng','other'),...state.transactions].slice(0,300), notices:[createNotice(`Chiến dịch tiếp thị hoàn tất. Danh tiếng +5 · chi phí ${cost.toLocaleString('vi-VN')} $.`,'success'),...state.notices] };
 }

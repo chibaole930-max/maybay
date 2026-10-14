@@ -36,6 +36,22 @@ export type DailyMissions = {
   server: { total: number; participating: number; totalPlanes: number; totalRoutes: number };
 };
 
+/** Trạng thái toàn server: sự kiện xoay vòng + số người đang online (heartbeat 5 phút). */
+export type WorldState = {
+  demandMultiplier: number;
+  title: string;
+  golden: boolean;
+  serverTime: number;
+  /** Số tài khoản đang mở game (heartbeat trong 5 phút). `null` = server không trả. */
+  online: number | null;
+  /** Số tài khoản hoạt động trong 24 giờ. */
+  activeToday: number | null;
+  /** Tổng tài khoản từng đăng ký. */
+  total: number | null;
+  totalPlanes: number | null;
+  totalRoutes: number | null;
+};
+
 /** Hồ sơ pilot từ server. Không có `id` / `username` — server cố tình giấu khoá bản ghi. */
 export type PilotProfile = {
   pilot: {
@@ -300,8 +316,8 @@ export const netClient = {
     return safe(async () => {
       const r = await fetch('/api/world-state', { cache: 'no-store' });
       if (!r.ok) throw new Error('world failed');
-      return (await r.json()) as { demandMultiplier: number; title: string; golden: boolean };
-    }, { demandMultiplier: 1, title: 'Ngày thường', golden: false });
+      return (await r.json()) as WorldState;
+    }, null);
   },
 
   async sendChat(_room: string, message: string) {

@@ -43,6 +43,9 @@ import { formatCurrency } from '@/lib/formulas';
 import { planes as catalogPlanes, airports as airportCatalog, LOGIN_REWARDS } from '@/lib/mock-data';
 import { msUntilMidnight } from '@/lib/game-engine';
 import { basePrice, distanceKm } from '@/lib/formulas';
+import { nextBestAction } from '@/lib/guidance';
+import { useServerPulse } from '@/lib/useServerPulse';
+import { difficultyOf } from '@/lib/tuning';
 
 function LoginStrip() {
   const streak = useGameStore((s) => s.loginStreak || 0);
@@ -108,6 +111,8 @@ function DashboardContent() {
   const [coach,setCoach]=useState(-1);
   const [coachRect,setCoachRect]=useState<DOMRect|null>(null);
   const [activityFilter,setActivityFilter]=useState<'all'|'flights'|'events'|'company'>('all');
+  const pulse = useServerPulse();
+  const difficulty = difficultyOf(game);
   const {
     airline,
     planes,
@@ -137,8 +142,6 @@ function DashboardContent() {
     }));
   }, [totalRevenueTx]);
 
-  // Máy bay có độ hao mòn cao
-  const highWearPlanes = planes.filter((p) => p.wear >= 70);
 
   // Top 5 đường bay sinh lời nhất
   const topRoutes = useMemo(() => {
@@ -147,7 +150,8 @@ function DashboardContent() {
 
   // Nhiệm vụ chưa hoàn thành
   const activeMissions = missions.filter((m) => !m.done).slice(0, 4);
-  const nextStep = !planes.length ? { title:'Mua máy bay đầu tiên', text:'ATR 72 là lựa chọn tiết kiệm, phù hợp các chặng ngắn.', cta:'Chọn ATR 72', href:'/fleet?open=catalog' } : !routes.length ? { title:'Mở đường bay SGN → DAD', text:'Chúng tôi đã chọn sẵn máy bay phù hợp và mức giá gợi ý.', cta:'Thiết lập đường bay', href:'/routes?create=1&suggest=1' } : highWearPlanes.length ? { title:'Bảo trì máy bay đến hạn', text:'Giảm hao mòn để máy bay tiếp tục khai thác an toàn.', cta:'Đến đội bay', href:'/fleet' } : { title:'Hoàn thành nhiệm vụ tiếp theo', text:'Nhiệm vụ giúp hãng nhận thưởng và kinh nghiệm.', cta:'Xem nhiệm vụ', href:'/missions' };
+  // Gợi ý bước tiếp theo do lib/guidance tính từ state thật (có why/earn cho newbie).
+  const nextStep = nextBestAction(game, (n) => formatCurrency(n, currency));
   const dayNo = airline ? Math.min(7,Math.max(1,Math.floor((game.gameTimeMs || 0)/(24*3600000))+1)) : 1;
   
   const prestigeMultiplier = 1 + (airline?.ipoShares || 0) * 0.08;
@@ -188,10 +192,23 @@ function DashboardContent() {
         }
       />
 
-      {!game.hardcore&&<div className="recommendation-card" data-coach="next"><span className="rec-orbit"><Sparkles size={21}/></span><div className="rec-copy"><span className="eyebrow">NÊN LÀM GÌ TIẾP THEO?</span><h2>{nextStep.title}</h2><p>{nextStep.text}</p></div><Link className="btn rec-button" href={nextStep.href}>{nextStep.cta}<ChevronRight size={16}/></Link></div>}
+      {!game.hardcore&&<div className={`recommendation-card urgency-${nextStep.urgency}`} data-coach="next"><span className="rec-orbit"><Sparkles size={21}/></span><div className="rec-copy"><span className="eyebrow">NÊN LÀM GÌ TIẾP THEO?</span><h2>{nextStep.title}</h2><p>{nextStep.text}</p><div className="rec-reasons"><span><b>Vì sao?</b> {nextStep.why}</span><span><b>Đổi lại được?</b> {nextStep.earn}</span></div></div><Link className="btn rec-button" href={nextStep.href}>{nextStep.cta}<ChevronRight size={16}/></Link></div>}
 
       <LoginStrip />
       <WeeklyStrip />
+
+      <section className="world-card card">
+        <div className="world-card-head"><div><span className="eyebrow"><span className="online-dot"/> BẢNG SỐ VIỆT NAM</span><h2 className="section-title" style={{margin:'4px 0 0'}}>{pulse.online===null?'Máy chủ chưa phản hồi':`${pulse.online} người đang chơi cùng bạn`}</h2></div><span className="world-card-title">{pulse.golden?pulse.title:'Nhu cầu toàn server bình thường'}</span></div>
+        <div className="world-card-grid">
+          <div><small>Đang online</small><b>{pulse.online===null?'—':pulse.online}</b><span>heartbeat 5 phút</span></div>
+          <div><small>Hoạt động 24 giờ</small><b>{pulse.activeToday===null?'—':pulse.activeToday}</b><span>tài khoản có chơi hôm nay</span></div>
+          <div><small>Tổng tài khoản</small><b>{pulse.total===null?'—':pulse.total}</b><span>từng đăng ký</span></div>
+          <div><small>Máy bay đang bay</small><b>{pulse.totalPlanes===null?'—':pulse.totalPlanes}</b><span>của người đang online</span></div>
+          <div><small>Tuyến đang khai thác</small><b>{pulse.totalRoutes===null?'—':pulse.totalRoutes}</b><span>của người đang online</span></div>
+          <div><small>Độ khó của bạn</small><b>{difficulty.label}</b><span>nhu cầu ×{difficulty.demandMultiplier} · chi phí ×{difficulty.costMultiplier}</span></div>
+        </div>
+        <p className="world-card-note">Số liệu lấy trực tiếp từ máy chủ, cập nhật mỗi phút. Xem thêm ở <Link href="/leaderboard">Xếp hạng</Link> và <Link href="/community">Cộng đồng</Link>.</p>
+      </section>
 
       <section className="live-income-section">
         <div className="live-income-heading"><div><span className="eyebrow"><span className="live-pulse"/> DÒNG TIỀN TRỰC TIẾP</span><h2>Thu nhập đang vận hành</h2></div></div>
